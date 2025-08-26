@@ -198,6 +198,18 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data) {
                     }
                 }
             }) {
+                CLAY({
+                    .backgroundColor = { 120, 120, 120, 255 },
+                .layout = { .sizing = {
+                .width = CLAY_SIZING_GROW(0)
+                }, .childGap = 16 }
+                }) {
+                CLAY_TEXT(CLAY_STRING("ANJAY"), CLAY_TEXT_CONFIG({
+                                .fontId = FONT_ID_BODY_16,
+                                .fontSize = 20,
+                                .textColor = { 255, 255, 255, 255 }
+                            }));
+                } 
                 for (int i = 0; i < documents.length; i++) {
                     Document document = documents.documents[i];
                     Clay_LayoutConfig sidebarButtonLayout = {
