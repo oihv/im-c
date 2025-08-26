@@ -24,6 +24,9 @@ int main(void) {
 
     ClayVideoDemo_Data data = ClayVideoDemo_Initialize();
 
+    // Enable debugger
+    Clay_SetDebugModeEnabled(true);
+
     while (!WindowShouldClose()) {
         // Run once per frame
         Clay_SetLayoutDimensions((Clay_Dimensions) {
