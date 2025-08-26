@@ -246,29 +246,37 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data) {
             }
 
             CLAY({ .id = CLAY_ID("MainContent"),
-                .backgroundColor = contentBackgroundColor,
-                .clip = { .vertical = true, .childOffset = Clay_GetScrollOffset() },
-                .layout = {
-                    .layoutDirection = CLAY_TOP_TO_BOTTOM,
-                    .childGap = 16,
-                    .padding = CLAY_PADDING_ALL(16),
-                    .sizing = layoutExpand
-                }
-            }) {
-                Document selectedDocument = documents.documents[data->selectedDocumentIndex];
-                CLAY_TEXT(selectedDocument.title, CLAY_TEXT_CONFIG({
-                    .fontId = FONT_ID_BODY_16,
-                    .fontSize = 24,
-                    .textColor = COLOR_WHITE
-                }));
-                CLAY_TEXT(selectedDocument.contents, CLAY_TEXT_CONFIG({
-                    .fontId = FONT_ID_BODY_16,
-                    .fontSize = 24,
-                    .textColor = COLOR_WHITE
-                }));
-            }
-        }
+    .backgroundColor = contentBackgroundColor,
+    .clip = { .vertical = true, .childOffset = Clay_GetScrollOffset() },
+    .layout = {
+        .layoutDirection = CLAY_TOP_TO_BOTTOM,
+        .childGap = 16,
+        .padding = CLAY_PADDING_ALL(16),
+        .sizing = layoutExpand
     }
+}) {
+    // Loop over all "messages" instead of one document
+    for (int i = 0; i < documents.length; i++) {
+        Document msg = documents.documents[i];
+
+        Clay_Color bubbleColor = (Clay_Color){ 230, 240, 255, 255 }; // other (blue-ish)
+        Clay_TextAlign align = CLAY_TEXT_ALIGN_LEFT;
+
+        if (strcmp(msg.title.chars, "Me") == 0) {
+            bubbleColor = (Clay_Color){ 180, 255, 200, 255 }; // green for me
+            align = CLAY_TEXT_ALIGN_RIGHT;
+        }
+
+        CLAY_CONTAINER(
+            CLAY_LAYOUT(.padding = CLAY_PADDING(6, 6, 6, 6),
+                        .sizing = CLAY_SIZING_CHILDREN,
+                        .childAlignment = align),
+            CLAY_RECTANGLE(bubbleColor),
+            CLAY_TEXT(msg.contents, CLAY_TEXT_CONFIG(.fontSize = 16, .align = align))
+        );
+    }
+}
+
 
     Clay_RenderCommandArray renderCommands = Clay_EndLayout();
     for (int32_t i = 0; i < renderCommands.length; i++) {
