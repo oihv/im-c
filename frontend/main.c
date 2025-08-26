@@ -1,7 +1,7 @@
 #define CLAY_IMPLEMENTATION
-#include "../../clay.h"
-#include "../../renderers/raylib/clay_renderer_raylib.c"
-#include "../shared-layouts/clay-video-demo.c"
+#include "clay.h"
+#include "renderers/raylib/clay_renderer_raylib.c"
+#include "shared-layouts/clay-video-demo.c"
 
 // This function is new since the video was published
 void HandleClayErrors(Clay_ErrorData errorData) {
