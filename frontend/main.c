@@ -50,20 +50,20 @@ int main(void)
             GetFrameTime()
         );
 
-        Clay_RenderCommandArray renderCommands; // changed
-        if (!loggedIn)
-        {
-            renderCommands = LoginPage_CreateLayout(&loginData);
-            if (loginData.loggedIn)
-            {
-                loggedIn = true;
-            }
-        }
-        else
-        {
-            renderCommands = ClayVideoDemo_CreateLayout(&data);
-        }
-        renderCommands = ClayIMCTest_CreateLayout();
+        // Clay_RenderCommandArray renderCommands; // changed
+        // if (!loggedIn)
+        // {
+        //     renderCommands = LoginPage_CreateLayout(&loginData);
+        //     if (loginData.loggedIn)
+        //     {
+        //         loggedIn = true;
+        //     }
+        // }
+        // else
+        // {
+        //     renderCommands = ClayVideoDemo_CreateLayout(&data);
+        // }
+        Clay_RenderCommandArray renderCommands = ClayIMCTest_CreateLayout();
 
         BeginDrawing();
         ClearBackground(BLACK);
