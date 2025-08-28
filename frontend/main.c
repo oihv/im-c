@@ -3,6 +3,7 @@
 #include "renderers/raylib/clay_renderer_raylib.c"
 #include "shared-layouts/login_page.c"
 #include "shared-layouts/clay-video-demo.c"
+#include "page/test-page.c"
 // This function is new since the video was published
 void HandleClayErrors(Clay_ErrorData errorData)
 {
@@ -62,6 +63,7 @@ int main(void)
         {
             renderCommands = ClayVideoDemo_CreateLayout(&data);
         }
+        renderCommands = ClayIMCTest_CreateLayout();
 
         BeginDrawing();
         ClearBackground(BLACK);
