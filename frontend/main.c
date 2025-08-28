@@ -4,6 +4,7 @@
 #include "shared-layouts/login_page.c"
 #include "shared-layouts/clay-video-demo.c"
 #include "page/test-page.c"
+
 // This function is new since the video was published
 void HandleClayErrors(Clay_ErrorData errorData)
 {
@@ -25,11 +26,13 @@ int main(void)
 
     LoginPage_Data loginData = LoginPage_Initialize(); // added
     ClayVideoDemo_Data data = ClayVideoDemo_Initialize();
+    int frameCounts = 0; // For button testing
 
     bool loggedIn = false; // added
 
     // Enable debugger
     Clay_SetDebugModeEnabled(true);
+        char buffer[MAX_INPUT_CHAR + 1] = "\0";
 
     while (!WindowShouldClose())
     {
@@ -63,7 +66,8 @@ int main(void)
         // {
         //     renderCommands = ClayVideoDemo_CreateLayout(&data);
         // }
-        Clay_RenderCommandArray renderCommands = ClayIMCTest_CreateLayout();
+        
+        Clay_RenderCommandArray renderCommands = ClayIMCTest_CreateLayout(buffer, &frameCounts);
 
         BeginDrawing();
         ClearBackground(BLACK);
