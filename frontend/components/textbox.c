@@ -9,11 +9,14 @@ void HandleTextBoxInteraction(Clay_ElementId elementId,
   // SidebarClickData *clickData = (SidebarClickData*)userData;
   bool *isFocus = (bool *)userData;
   // If this button was clicked
+  // TODO: Implement how to lose focus when other object is clicked
   if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
     *isFocus = true;
   }
 }
 
+// TODO: simplify data passing in a struct, pass textconfig too for
+// customization by caller
 void renderTextBox(char *buffer, int *frameCount) {
   CLAY({.layout = {.padding = {16, 16, 8, 8},
                    .sizing = {.width = CLAY_SIZING_GROW(0),
