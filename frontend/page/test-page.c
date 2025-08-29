@@ -1,6 +1,7 @@
 #include "../clay.h"
 #include "../components/textbox.c"
 #include <stdio.h>
+#include "../components/textbox.h"
 
 Clay_RenderCommandArray ClayIMCTest_CreateLayout(char* buffer, int* frameCount) {
   Clay_BeginLayout();
@@ -17,7 +18,18 @@ Clay_RenderCommandArray ClayIMCTest_CreateLayout(char* buffer, int* frameCount) 
           .childGap = 16
       }
   }) {
-    renderTextBox(buffer, frameCount);
+    Component_TextBoxData textData = {
+       .buffer = buffer,
+       .frameCount = frameCount,
+       .max_len = 254,
+       .textConfig = (Clay_TextElementConfig) {
+.fontId = FONT_ID_BODY_16,
+                                         .fontSize = 16,
+                                         .textColor = {255, 255, 255, 255},
+                                         .wrapMode = CLAY_TEXT_WRAP_WORDS}
+       };
+    
+    renderTextBox(&textData);
   }
 
   return Clay_EndLayout();
