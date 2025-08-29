@@ -1,8 +1,6 @@
 #include "../clay.h"
 #include <stdlib.h>
-
-const int FONT_ID_BODY_16 = 0;
-Clay_Color COLOR_WHITE = {255, 255, 255, 255};
+#include "mainpage.h"
 
 void RenderHeaderButton(Clay_String text)
 {

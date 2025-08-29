@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.27)
-project(clay_examples_introducing_clay_video_demo C)
+project(im_c C)
 set(CMAKE_C_STANDARD 99)
 
 # Adding Raylib
@@ -18,12 +18,12 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(raylib)
 
-add_executable(clay_examples_introducing_clay_video_demo main.c)
+add_executable(im_c main.c)
 
-target_compile_options(clay_examples_introducing_clay_video_demo PUBLIC)
-target_include_directories(clay_examples_introducing_clay_video_demo PUBLIC .)
+target_compile_options(im_c PUBLIC)
+target_include_directories(im_c PUBLIC .)
 
-target_link_libraries(clay_examples_introducing_clay_video_demo PUBLIC raylib)
+target_link_libraries(im_c PUBLIC raylib)
 
 if(MSVC)
   set(CMAKE_C_FLAGS_DEBUG "/D CLAY_DEBUG")
@@ -33,7 +33,7 @@ else()
 endif()
 
 add_custom_command(
-        TARGET clay_examples_introducing_clay_video_demo POST_BUILD
+        TARGET im_c POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/resources
         ${CMAKE_CURRENT_BINARY_DIR}/resources)
