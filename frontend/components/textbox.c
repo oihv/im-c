@@ -21,6 +21,7 @@ void renderTextBox(Component_TextBoxData* data) {
                    .sizing = {.width = CLAY_SIZING_GROW(0),
                               .height = CLAY_SIZING_GROW(0, 50)}},
         .cornerRadius = CLAY_CORNER_RADIUS(5)}) {
+    // TODO: store static variables somewhere
     static int len = 0;
     size_t blink_len;
     static bool isFocus = true; // for testing
@@ -44,6 +45,7 @@ void renderTextBox(Component_TextBoxData* data) {
 
       // Blinking underscore at the end
       blink_len = len + 1;
+      // TODO: implement placeholder text
       // if (len == 0 || buffer[len] == '\0' && (buffer[len - 1] != '_' &&
       // buffer[len - 1] != ' ')) { printf("%c\n", buffer[len - 1]);
       //   len++;

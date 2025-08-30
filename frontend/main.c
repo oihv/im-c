@@ -11,6 +11,8 @@ void HandleClayErrors(Clay_ErrorData errorData)
     printf("%s", errorData.errorText.chars);
 }
 
+Clay_RenderCommandArray ClayIMCTest_CreateLayout(char* buffer, int* frameCount);
+
 int main(void)
 {
     Clay_Raylib_Initialize(1024, 768, "Introducing Clay Demo", FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT | FLAG_VSYNC_HINT); // Extra parameters to this function are new since the video was published
@@ -25,7 +27,7 @@ int main(void)
     Clay_SetMeasureTextFunction(Raylib_MeasureText, fonts);
 
     LoginPage_Data loginData = LoginPage_Initialize(); // added
-    ClayVideoDemo_Data data = ClayVideoDemo_Initialize();
+     ClayVideoDemo_Data data = ClayVideoDemo_Initialize();
     int frameCounts = 0; // For button testing
 
     bool loggedIn = false; // added
@@ -53,21 +55,20 @@ int main(void)
             GetFrameTime()
         );
 
-        // Clay_RenderCommandArray renderCommands; // changed
-        // if (!loggedIn)
-        // {
-        //     renderCommands = LoginPage_CreateLayout(&loginData);
-        //     if (loginData.loggedIn)
-        //     {
-        //         loggedIn = true;
-        //     }
-        // }
-        // else
-        // {
-        //     renderCommands = ClayVideoDemo_CreateLayout(&data);
-        // }
-        
-        Clay_RenderCommandArray renderCommands = ClayIMCTest_CreateLayout(buffer, &frameCounts);
+        Clay_RenderCommandArray renderCommands;
+        if (!loginData.loggedIn)
+        {
+            renderCommands = LoginPage_CreateLayout(&loginData);
+            if (loginData.loggedIn)
+            {
+                loggedIn = false;
+            }
+        }
+        else
+        {
+            renderCommands = ClayVideoDemo_CreateLayout(&data);
+            renderCommands = ClayIMCTest_CreateLayout(buffer, &frameCounts);
+        }
 
         BeginDrawing();
         ClearBackground(BLACK);

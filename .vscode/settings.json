@@ -1,6 +1,13 @@
 {
     "cmake.sourceDirectory": "C:/Users/Benedict/Programming/repo/im-c/frontend",
     "files.associations": {
-        "clay.h": "c"
+        "clay.h": "c",
+        "atomic": "cpp",
+        "cstdint": "cpp",
+        "type_traits": "cpp",
+        "xmemory": "cpp",
+        "xutility": "cpp",
+        "*.m": "cpp",
+        "mainpage.h": "c"
     }
 }

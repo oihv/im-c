@@ -14,6 +14,9 @@ Compile project
 cmake --build build
 ```
 
+## Clay Guide
+To check what can goes into the declaration of a clay element, look at the declaration of 'typedef struct Clay_ElementDeclaration'
+
 ## Ackowledgements
 
 Clay (https://github.com/nicbarker/clay)
