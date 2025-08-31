@@ -67,7 +67,7 @@ int main(void)
         else
         {
             renderCommands = ClayVideoDemo_CreateLayout(&data);
-            renderCommands = ClayIMCTest_CreateLayout(buffer, &frameCounts);
+           // renderCommands = ClayIMCTest_CreateLayout(buffer, &frameCounts);
         }
 
         BeginDrawing();

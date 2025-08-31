@@ -108,25 +108,79 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
               .childGap = 16}})
     {
         // Child elements go inside braces
-
-        CLAY({.id = CLAY_ID("MainContent"),
-              .backgroundColor = contentBackgroundColor,
-              .clip = {.vertical = true, .childOffset = Clay_GetScrollOffset()},
-              .layout = {.layoutDirection = CLAY_TOP_TO_BOTTOM,
-                         .childGap = 16,
-                         .padding = CLAY_PADDING_ALL(16),
-                         .sizing = layoutExpand}})
+        CLAY({.id = CLAY_ID("LowerContent"),
+              .layout = {.layoutDirection = CLAY_LEFT_TO_RIGHT,
+                         .sizing = {
+                             .width = CLAY_SIZING_GROW(1),
+                             .height = CLAY_SIZING_GROW(0)},
+                         .childGap = 16}})
         {
-            Document selectedDocument = documents.documents[data->selectedDocumentIndex];
-            CLAY_TEXT(selectedDocument.title,
-                      CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                        .fontSize = 24,
-                                        .textColor = COLOR_WHITE}));
-            CLAY_TEXT(selectedDocument.contents,
-                      CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                        .fontSize = 24,
-                                        .textColor = COLOR_WHITE}));
+            CLAY({.id = CLAY_ID("Sidebar"),
+                  .backgroundColor = contentBackgroundColor,
+                  .layout = {
+                      .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                      .padding = CLAY_PADDING_ALL(16),
+                      .childGap = 8,
+                      .sizing = {
+                          .width = CLAY_SIZING_FIXED(200),
+                          .height = CLAY_SIZING_GROW(0)}}})
+            {
+                for (int i = 0; i < documents.length; i++)
+                {
+                    Document document = documents.documents[i];
+                    Clay_LayoutConfig sidebarButtonLayout = {
+                        .sizing = {.width = CLAY_SIZING_GROW(0)},
+                        .padding = CLAY_PADDING_ALL(16)};
+
+                    if (i == data->selectedDocumentIndex)
+                    {
+                        CLAY({.layout = sidebarButtonLayout,
+                              .backgroundColor = {120, 120, 120, 255},
+                              .cornerRadius = CLAY_CORNER_RADIUS(8)})
+                        {
+                            CLAY_TEXT(document.title, CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
+                                                                        .fontSize = 20,
+                                                                        .textColor = {255, 255, 255, 255}}));
+                        }
+                    }
+                    else
+                    {
+                        SidebarClickData *clickData = (SidebarClickData *)(data->frameArena.memory + data->frameArena.offset);
+                        *clickData = (SidebarClickData){.requestedDocumentIndex = i, .selectedDocumentIndex = &data->selectedDocumentIndex};
+                        data->frameArena.offset += sizeof(SidebarClickData);
+                        CLAY({.layout = sidebarButtonLayout, .backgroundColor = (Clay_Color){120, 120, 120, Clay_Hovered() ? 120 : 0}, .cornerRadius = CLAY_CORNER_RADIUS(8)})
+                        {
+                            Clay_OnHover(HandleSidebarInteraction, (intptr_t)clickData);
+                            CLAY_TEXT(document.title, CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
+                                                                        .fontSize = 20,
+                                                                        .textColor = {255, 255, 255, 255}}));
+                        }
+                    }
+                }
+            }
+
+            CLAY({.id = CLAY_ID("MainContent"),
+                  .backgroundColor = contentBackgroundColor,
+                  .clip = {.vertical = true, .childOffset = Clay_GetScrollOffset()},
+                  .layout = {.layoutDirection = CLAY_TOP_TO_BOTTOM,
+                             .childGap = 16,
+                             .padding = CLAY_PADDING_ALL(16),
+                             .sizing = {
+                                 .width = CLAY_SIZING_GROW(1),
+                                 .height = CLAY_SIZING_GROW(0)}}})
+            {
+                Document selectedDocument = documents.documents[data->selectedDocumentIndex];
+                CLAY_TEXT(selectedDocument.title,
+                          CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
+                                            .fontSize = 24,
+                                            .textColor = COLOR_WHITE}));
+                CLAY_TEXT(selectedDocument.contents,
+                          CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
+                                            .fontSize = 24,
+                                            .textColor = COLOR_WHITE}));
+            }
         }
+
         CLAY({.id = CLAY_ID("BottomBar"),
               .layout = {
                   .sizing = {
@@ -146,7 +200,7 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
             })
             {
                 CLAY({.layout = {.padding = {16, 16, 8, 8},
-                .sizing = {.width = CLAY_SIZING_GROW(0)}},
+                                 .sizing = {.width = CLAY_SIZING_GROW(0)}},
                       .backgroundColor = {140, 140, 140, 255},
                       .cornerRadius = CLAY_CORNER_RADIUS(5)})
                 {
@@ -161,8 +215,6 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
             {
                 RenderHeaderButton(CLAY_STRING("Send"));
             }
-
-            
         }
     }
     Clay_RenderCommandArray renderCommands = Clay_EndLayout();
