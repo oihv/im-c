@@ -42,6 +42,16 @@ DocumentArray documents = {
     .length = 5,
     .documents = documentsRaw};
 
+typedef struct {
+    Clay_String sender;
+    Clay_String text;
+} ChatMessage;
+
+#define MAX_MESSAGES 100
+ChatMessage chatMessages[MAX_MESSAGES];
+int chatMessageCount = 0;
+
+
 typedef struct
 {
     intptr_t offset;
@@ -117,6 +127,7 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
         {
             CLAY({.id = CLAY_ID("Sidebar"),
                   .backgroundColor = contentBackgroundColor,
+                  .cornerRadius = CLAY_CORNER_RADIUS(8),
                   .layout = {
                       .layoutDirection = CLAY_TOP_TO_BOTTOM,
                       .padding = CLAY_PADDING_ALL(16),
@@ -209,6 +220,7 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
             {
                 CLAY({.id = CLAY_ID("MainContent"),
                       .backgroundColor = contentBackgroundColor,
+                      .cornerRadius = CLAY_CORNER_RADIUS(8),
                       .clip = {.vertical = true, .childOffset = Clay_GetScrollOffset()},
                       .layout = {.layoutDirection = CLAY_TOP_TO_BOTTOM,
                                  .childGap = 16,
@@ -266,7 +278,6 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
 
             } // End RightPane
         }
-
     }
     Clay_RenderCommandArray renderCommands = Clay_EndLayout();
 
