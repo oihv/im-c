@@ -11,4 +11,13 @@
         "mainpage.h": "c",
         "libwebsockets.h": "c"
     }
+}{
+    "files.associations": {
+        "xmemory": "c",
+        "mongoose.h": "c",
+        "filesystem": "c",
+        "string.h": "c",
+        "signal.h": "c",
+        "libwebsockets.h": "c"
+    }
 }
