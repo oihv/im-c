@@ -8,6 +8,7 @@
         "xmemory": "cpp",
         "xutility": "cpp",
         "*.m": "cpp",
-        "mainpage.h": "c"
+        "mainpage.h": "c",
+        "libwebsockets.h": "c"
     }
 }

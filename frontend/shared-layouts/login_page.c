@@ -137,8 +137,9 @@ Clay_RenderCommandArray LoginPage_CreateLayout(LoginPage_Data *data)
         }
     }
 
+
     // For now, super simple: auto-login just for demo
-     data->loggedIn = true;
+    data->loggedIn = true;
 
     return Clay_EndLayout();
 }

@@ -120,11 +120,36 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                   .layout = {
                       .layoutDirection = CLAY_TOP_TO_BOTTOM,
                       .padding = CLAY_PADDING_ALL(16),
-                      .childGap = 8,
+                      .childGap = 16,
                       .sizing = {
-                          .width = CLAY_SIZING_FIXED(200),
+                          .width = CLAY_SIZING_FIXED(150),
                           .height = CLAY_SIZING_GROW(0)}}})
             {
+                // --- IP Address panel ---
+                CLAY({.id = CLAY_ID("IpAddress"),
+                      .backgroundColor = {120, 120, 120, 255},
+                      .cornerRadius = CLAY_CORNER_RADIUS(8),
+                      .layout = {
+                          .padding = CLAY_PADDING_ALL(12),
+                          .sizing = {.width = CLAY_SIZING_GROW(0)}}})
+                {
+                    CLAY_TEXT(CLAY_STRING("IP Address: 127.0.0.1:1000"),
+                              CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16, .fontSize = 16, .textColor = {255, 255, 255, 255}}));
+                }
+
+                // --- Username panel ---
+                CLAY({.id = CLAY_ID("Username"),
+                      .backgroundColor = {120, 120, 120, 255},
+                      .cornerRadius = CLAY_CORNER_RADIUS(8),
+                      .layout = {
+                          .padding = CLAY_PADDING_ALL(12),
+                          .sizing = {.width = CLAY_SIZING_GROW(0)}}})
+                {
+                    CLAY_TEXT(CLAY_STRING("Username: Ben"),
+                              CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16, .fontSize = 16, .textColor = {255, 255, 255, 255}}));
+                }
+
+                // --- Document loop ---
                 for (int i = 0; i < documents.length; i++)
                 {
                     Document document = documents.documents[i];
@@ -157,71 +182,98 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                         }
                     }
                 }
-            }
 
-            CLAY({.id = CLAY_ID("MainContent"),
-                  .backgroundColor = contentBackgroundColor,
-                  .clip = {.vertical = true, .childOffset = Clay_GetScrollOffset()},
-                  .layout = {.layoutDirection = CLAY_TOP_TO_BOTTOM,
-                             .childGap = 16,
-                             .padding = CLAY_PADDING_ALL(16),
-                             .sizing = {
-                                 .width = CLAY_SIZING_GROW(1),
-                                 .height = CLAY_SIZING_GROW(0)}}})
-            {
-                Document selectedDocument = documents.documents[data->selectedDocumentIndex];
-                CLAY_TEXT(selectedDocument.title,
-                          CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                            .fontSize = 24,
-                                            .textColor = COLOR_WHITE}));
-                CLAY_TEXT(selectedDocument.contents,
-                          CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                            .fontSize = 24,
-                                            .textColor = COLOR_WHITE}));
-            }
-        }
+                // --- Spacer to push logout button down ---
+                CLAY({.layout = {.sizing = {.height = CLAY_SIZING_GROW(1)}}});
 
-        CLAY({.id = CLAY_ID("BottomBar"),
-              .layout = {
-                  .sizing = {
-                      .height = CLAY_SIZING_FIXED(60),
-                      .width = CLAY_SIZING_GROW(0)},
-                  .padding = {16, 16, 0, 0},
-                  .childGap = 16,
-                  .childAlignment = {.y = CLAY_ALIGN_Y_CENTER}},
-              .backgroundColor = contentBackgroundColor,
-              .cornerRadius = CLAY_CORNER_RADIUS(8)})
-        {
-            CLAY({
-                .id = CLAY_ID("InputBox"),
-                .layout = {.sizing = {
-                               .width = CLAY_SIZING_GROW(120),
-                           }},
-            })
-            {
-                CLAY({.layout = {.padding = {16, 16, 8, 8},
-                                 .sizing = {.width = CLAY_SIZING_GROW(0)}},
-                      .backgroundColor = {140, 140, 140, 255},
-                      .cornerRadius = CLAY_CORNER_RADIUS(5)})
+                // --- Logout button ---
+                CLAY({.id = CLAY_ID("LogoutButton"),
+                      .backgroundColor = {120, 120, 120, 255},
+                      .cornerRadius = CLAY_CORNER_RADIUS(8),
+                      .layout = {
+                          .padding = CLAY_PADDING_ALL(12),
+                          .sizing = {.width = CLAY_SIZING_GROW(0)}}})
                 {
-                    CLAY_TEXT(CLAY_STRING("Enter a message.."), CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                                                                  .fontSize = 16,
-                                                                                  .textColor = {255, 255, 255, 255}}));
+                    CLAY_TEXT(CLAY_STRING("Logout"),
+                              CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16, .fontSize = 16, .textColor = {255, 255, 255, 255}}));
                 }
             }
-            CLAY({.id = CLAY_ID("SendButton"),
-                  .layout = {.sizing = {.width = CLAY_SIZING_FIXED(60)},
-                             .childAlignment = {.x = CLAY_ALIGN_X_RIGHT}}})
+
+            // 📌 New vertical container for MainContent + BottomBar
+            CLAY({.id = CLAY_ID("RightPane"),
+                  .layout = {.layoutDirection = CLAY_TOP_TO_BOTTOM,
+                             .sizing = {
+                                 .width = CLAY_SIZING_GROW(1),
+                                 .height = CLAY_SIZING_GROW(0)},
+                             .childGap = 16}})
             {
-                RenderHeaderButton(CLAY_STRING("Send"));
-            }
+                CLAY({.id = CLAY_ID("MainContent"),
+                      .backgroundColor = contentBackgroundColor,
+                      .clip = {.vertical = true, .childOffset = Clay_GetScrollOffset()},
+                      .layout = {.layoutDirection = CLAY_TOP_TO_BOTTOM,
+                                 .childGap = 16,
+                                 .padding = CLAY_PADDING_ALL(16),
+                                 .sizing = {
+                                     .width = CLAY_SIZING_GROW(1),
+                                     .height = CLAY_SIZING_GROW(0)}}})
+                {
+                    Document selectedDocument = documents.documents[data->selectedDocumentIndex];
+                    CLAY_TEXT(selectedDocument.title,
+                              CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
+                                                .fontSize = 24,
+                                                .textColor = COLOR_WHITE}));
+                    CLAY_TEXT(selectedDocument.contents,
+                              CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
+                                                .fontSize = 24,
+                                                .textColor = COLOR_WHITE}));
+                }
+
+                CLAY({.id = CLAY_ID("BottomBar"),
+                      .layout = {
+                          .sizing = {
+                              .height = CLAY_SIZING_FIXED(60),
+                              .width = CLAY_SIZING_GROW(0)},
+                          .padding = {16, 16, 0, 0},
+                          .childGap = 16,
+                          .childAlignment = {.y = CLAY_ALIGN_Y_CENTER}},
+                      .backgroundColor = contentBackgroundColor,
+                      .cornerRadius = CLAY_CORNER_RADIUS(8)})
+                {
+                    CLAY({
+                        .id = CLAY_ID("InputBox"),
+                        .layout = {.sizing = {
+                                       .width = CLAY_SIZING_GROW(120),
+                                   }},
+                    })
+                    {
+                        CLAY({.layout = {.padding = {16, 16, 8, 8},
+                                         .sizing = {.width = CLAY_SIZING_GROW(0)}},
+                              .backgroundColor = {140, 140, 140, 255},
+                              .cornerRadius = CLAY_CORNER_RADIUS(5)})
+                        {
+                            CLAY_TEXT(CLAY_STRING("Enter a message.."), CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
+                                                                                          .fontSize = 16,
+                                                                                          .textColor = {255, 255, 255, 255}}));
+                        }
+                    }
+                    CLAY({.id = CLAY_ID("SendButton"),
+                          .layout = {.sizing = {.width = CLAY_SIZING_FIXED(60)},
+                                     .childAlignment = {.x = CLAY_ALIGN_X_RIGHT}}})
+                    {
+                        RenderHeaderButton(CLAY_STRING("Send"));
+                    }
+                }
+
+            } // End RightPane
         }
+
     }
     Clay_RenderCommandArray renderCommands = Clay_EndLayout();
+
     for (int32_t i = 0; i < renderCommands.length; i++)
     {
-        Clay_RenderCommandArray_Get(&renderCommands, i)->boundingBox.y +=
-            data->yOffset;
+        Clay_RenderCommandArray_Get(&renderCommands, i)->boundingBox.y += data->yOffset;
     }
+
     return renderCommands;
 }
