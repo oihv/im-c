@@ -42,7 +42,8 @@ DocumentArray documents = {
     .length = 5,
     .documents = documentsRaw};
 
-typedef struct {
+typedef struct
+{
     Clay_String sender;
     Clay_String text;
 } ChatMessage;
@@ -50,7 +51,6 @@ typedef struct {
 #define MAX_MESSAGES 100
 ChatMessage chatMessages[MAX_MESSAGES];
 int chatMessageCount = 0;
-
 
 typedef struct
 {
@@ -71,6 +71,27 @@ typedef struct
     int32_t *selectedDocumentIndex;
 } SidebarClickData;
 
+typedef struct
+{
+    int dummy; // placeholder for future use
+} SendClickData;
+
+void HandleSendMessage(
+    Clay_ElementId elementId,
+    Clay_PointerData pointerData,
+    intptr_t userData)
+{
+    if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME)
+    {
+        if (chatMessageCount < MAX_MESSAGES)
+        {
+            chatMessages[chatMessageCount++] = (ChatMessage){
+                .sender = CLAY_STRING("Ben"),
+                .text = CLAY_STRING("Hello, this is a test message!")};
+        }
+    }
+}
+
 void HandleSidebarInteraction(
     Clay_ElementId elementId,
     Clay_PointerData pointerData,
@@ -84,6 +105,22 @@ void HandleSidebarInteraction(
         {
             // Select the corresponding document
             *clickData->selectedDocumentIndex = clickData->requestedDocumentIndex;
+        }
+    }
+}
+
+void HandleSendInteraction(
+    Clay_ElementId elementId,
+    Clay_PointerData pointerData,
+    intptr_t userData)
+{
+    if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME)
+    {
+        if (chatMessageCount < MAX_MESSAGES)
+        {
+            chatMessages[chatMessageCount++] = (ChatMessage){
+                .sender = CLAY_STRING("Ben"),
+                .text = CLAY_STRING("Hello, this is a test message!")};
         }
     }
 }
@@ -228,16 +265,26 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                                  .sizing = {
                                      .width = CLAY_SIZING_GROW(1),
                                      .height = CLAY_SIZING_GROW(0)}}})
+
                 {
-                    Document selectedDocument = documents.documents[data->selectedDocumentIndex];
-                    CLAY_TEXT(selectedDocument.title,
-                              CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                                .fontSize = 24,
-                                                .textColor = COLOR_WHITE}));
-                    CLAY_TEXT(selectedDocument.contents,
-                              CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                                .fontSize = 24,
-                                                .textColor = COLOR_WHITE}));
+                    for (int i = chatMessageCount - 1; i >= 0; i--)
+                    {
+                        ChatMessage message = chatMessages[i];
+                        CLAY({.layout = {.layoutDirection = CLAY_TOP_TO_BOTTOM,
+                                         .padding = CLAY_PADDING_ALL(8),
+                                         .sizing = {.width = CLAY_SIZING_FIT(1)}},
+                              .backgroundColor = {120, 120, 120, 255},
+                              .cornerRadius = CLAY_CORNER_RADIUS(6)})
+                        {
+                            CLAY_TEXT(message.sender, CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
+                                                                        .fontSize = 14,
+                                                                        .textColor = {200, 200, 255, 255}}));
+
+                            CLAY_TEXT(message.text, CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
+                                                                      .fontSize = 16,
+                                                                      .textColor = {255, 255, 255, 255}}));
+                        }
+                    }
                 }
 
                 CLAY({.id = CLAY_ID("BottomBar"),
@@ -272,6 +319,11 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                           .layout = {.sizing = {.width = CLAY_SIZING_FIXED(60)},
                                      .childAlignment = {.x = CLAY_ALIGN_X_RIGHT}}})
                     {
+                        SendClickData *clickData = (SendClickData *)(data->frameArena.memory + data->frameArena.offset);
+                        *clickData = (SendClickData){0};
+                        data->frameArena.offset += sizeof(SendClickData);
+
+                        Clay_OnHover(HandleSendInteraction, (intptr_t)clickData);
                         RenderHeaderButton(CLAY_STRING("Send"));
                     }
                 }
