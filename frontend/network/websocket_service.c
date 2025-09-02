@@ -1,7 +1,9 @@
 #include "websocket_service.h"
 #include <libwebsockets.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
+#include <signal.h>
 #include "../clay.h"
 
 static struct lws_context *ws_context = NULL;
@@ -26,7 +28,27 @@ static const lws_retry_bo_t retry = {
     .jitter_percent = 20,
 };
 
+// Global variable for shutdown coordination
+static volatile bool ws_should_shutdown = false;
+
+bool websocket_should_close() {
+  return ws_should_shutdown;
+}
+
+// In your websocket service
+void websocket_signal_cb(void *handle, int signum) {
+    switch (signum) {
+    case SIGTERM:
+    case SIGINT:
+        // Set flag for graceful shutdown
+        ws_should_shutdown = true;
+        exit(1);
+        break;
+    }
+}
+
 static void connect_client(lws_sorted_usec_list_t *sul) {
+  // printf("connect_client called.\n");
   // What does container_of macro do?
   struct my_conn *m = lws_container_of(sul, struct my_conn, sul);
   struct lws_client_connect_info i = {0};
@@ -57,11 +79,13 @@ static int callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
                             void *user, void *in, size_t len) {
   switch (reason) {
   case LWS_CALLBACK_CLIENT_ESTABLISHED:
+      // printf("LWS_CALLBACK_CLIENT_ESTABLISHED\n");
     ws_data.connected = true;
     strcpy(ws_data.connection_status, "Connected");
     break;
 
   case LWS_CALLBACK_CLIENT_RECEIVE:
+      // printf("LWS_CALLBACK_CLIENT_RECEIVE\n");
     // Copy received message to our data structure
     if (len < sizeof(ws_data.message) - 1) {
       memcpy(ws_data.message, in, len);
@@ -71,7 +95,9 @@ static int callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
     break;
 
   case LWS_CALLBACK_CLIENT_WRITEABLE:
+      // printf("LWS_CALLBACK_CLIENT_WRITEABLE\n");
     if (ws_connection.has_data_to_send) {
+      // printf("tried to write\n");
         unsigned char buf[LWS_PRE + 512];
         unsigned char *p = &buf[LWS_PRE];
 
@@ -86,16 +112,20 @@ static int callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
     break;
 
   case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
+      printf("LWS_CALLBACK_CLIENT_CONNECTION_ERROR\n");
     ws_data.connected = false;
     strcpy(ws_data.connection_status, "Connection error");
     goto do_retry;
 
   case LWS_CALLBACK_CLIENT_CLOSED:
+      // printf("LWS_CALLBACK_CLIENT_CLOSED\n");
     ws_data.connected = false;
     strcpy(ws_data.connection_status, "Disconnected");
     goto do_retry;
 
   default:
+      // printf("default\n");
+    
     break;
   }
   return 0;
@@ -114,11 +144,16 @@ static const struct lws_protocols protocols[] = {
 };
 
 bool websocket_service_init(void) {
+  lwsl_debug("websocket_service_init called.\n");
   struct lws_context_creation_info info = {0};
 
   info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
   info.port = CONTEXT_PORT_NO_LISTEN;
   info.protocols = protocols;
+  // info.signal_cb = websocket_signal_cb;
+
+ 	int logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
+ 	lws_set_log_level(logs, NULL);
 
   ws_context = lws_create_context(&info);
   if (!ws_context)
@@ -136,6 +171,11 @@ WebSocketData *websocket_service_update(void) {
     // Non-blocking service call
     lws_service(ws_context, 0);
   }
+
+  if (ws_connection.wsi)
+    lws_callback_on_writable(ws_connection.wsi); // Keep loop active
+  else
+    strcpy(ws_data.connection_status, "Connecting...");
   return &ws_data;
 }
 

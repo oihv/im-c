@@ -3,50 +3,61 @@
 #include "../renderers/raylib/raylib.h"
 #include "../shared-layouts/mainpage.h"
 #include "stdio.h"
+#include <stdint.h>
 #include "textbox.h"
+
+void resetTextBoxFocus(bool* focusList, size_t len) {
+  printf("reset Called\n");
+  for(int i = 0; i < len; i++) {
+    focusList[i] = false;
+  }
+}
 
 void HandleTextBoxInteraction(Clay_ElementId elementId,
                               Clay_PointerData pointerData, intptr_t userData) {
-  // SidebarClickData *clickData = (SidebarClickData*)userData;
-  bool *isFocus = (bool *)userData;
+  bool* isFocus = (bool*)userData;
+  // TextBoxEventData* data = (TextBoxEventData*) userData;
+  // bool* isFocus = data->isFocus;
   // If this button was clicked
   // TODO: Implement how to lose focus when other object is clicked
   SetMouseCursor(MOUSE_CURSOR_IBEAM);
   if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+    // size_t focus_len  = data->focus_len;
+    // bool* focusList = data->focusList;
+    // resetTextBoxFocus(focusList, focus_len);
     *isFocus = true;
   }
 }
 
 void renderTextBox(Component_TextBoxData* data) {
   CLAY({.id = CLAY_SID(data->id),
-    .layout = {.padding = {16, 16, 8, 8},
-                   .sizing = {.width = CLAY_SIZING_GROW(0),
-                              .height = CLAY_SIZING_GROW(0, 50)}},
+    .layout = {.sizing = {.width = CLAY_SIZING_GROW(0),
+                          .height = CLAY_SIZING_GROW(.min = 16)}},
         .cornerRadius = CLAY_CORNER_RADIUS(5)}) {
     // TODO: store static variables somewhere
-    static int len = 0;
+    size_t* len = data->len;
     size_t blink_len = 0;
-    static bool isFocus = false; // for testing
+    bool* isFocus = data->eventData.isFocus; // for testing
     int key = 0;
 
-    if (isFocus) {
+    if (*isFocus) {
       key = GetCharPressed();
       (*data->frameCount)++;
 
       while (key > 0) {
-        if (len < data->maxLen) {
-          if (data->buffer[len - 1] == '_')
-            len--;
-          data->buffer[len] = key;
-          data->buffer[len + 1] = '\0';
-          len++;
+        if (*len < data->maxLen) {
+          if (data->buffer[*len - 1] == '_')
+            (*len)--;
+          data->buffer[*len] = key;
+          data->buffer[*len + 1] = '\0';
+          (*len)++;
         }
 
         key = GetCharPressed();
       }
 
       // Blinking underscore at the end
-      blink_len = len + 1;
+      blink_len = *len + 1;
       // TODO: implement placeholder text
       // if (len == 0 || buffer[len] == '\0' && (buffer[len - 1] != '_' &&
       // buffer[len - 1] != ' ')) { printf("%c\n", buffer[len - 1]);
@@ -65,22 +76,22 @@ void renderTextBox(Component_TextBoxData* data) {
         // TODO! implement this not only for spaces but other chars as wel
         if (IsKeyDown(KEY_LEFT_CONTROL) && key == KEY_BACKSPACE) {
           // If right at the back of the cursor is a space, delete it too,
-          if (len > 0 && data->buffer[len - 1] == '\0')
-            len--;
+          if (*len > 0 && data->buffer[*len - 1] == '\0')
+            (*len)--;
           // Delete until space
           while (len > 0) {
-            if (data->buffer[len - 1] == ' ')
+            if (data->buffer[*len - 1] == ' ')
               break;
-            len--;
+            (*len)--;
           }
-          data->buffer[len] = '\0';
+          data->buffer[*len] = '\0';
           // Implement 'backspace'
         } else if (key == KEY_BACKSPACE) {
-          if (len > 0) {
-            if (data->buffer[len - 1] == '_')
-              len--;
-            data->buffer[len - 1] = '\0';
-            len--;
+          if (*len > 0) {
+            if (data->buffer[*len - 1] == '_')
+              (*len)--;
+            data->buffer[*len - 1] = '\0';
+            (*len)--;
           }
         }
 
@@ -88,19 +99,21 @@ void renderTextBox(Component_TextBoxData* data) {
         // used by button too
         if (key == KEY_ENTER) {
           data->buffer[0] = '\0';
-          len = 0;
+          *len = 0;
         }
 
         key = GetKeyPressed();
       }
     }
+    // data->eventData.focusList[0] = 1;
 
-    Clay_OnHover(HandleTextBoxInteraction, (intptr_t)&isFocus);
+
+    Clay_OnHover(HandleTextBoxInteraction, (intptr_t)isFocus);
 
     Clay_String buf_str = (Clay_String){
         .isStaticallyAllocated = false, .length = blink_len, .chars = data->buffer};
 
-    if (!isFocus && len == 0) CLAY_TEXT(data->placeholder, CLAY_TEXT_CONFIG(data->textConfig));
+    if (!*isFocus && *len == 0) CLAY_TEXT(data->placeholder, CLAY_TEXT_CONFIG(data->textConfig));
 
     CLAY_TEXT(buf_str, CLAY_TEXT_CONFIG(data->textConfig));
   }

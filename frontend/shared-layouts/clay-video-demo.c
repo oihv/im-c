@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include "mainpage.h"
 #include <string.h>
+#include "../renderers/raylib/raylib.h"
+#include "../components/textbox.h"
 
 void RenderHeaderButton(Clay_String text)
 {
@@ -342,6 +344,25 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                             CLAY_TEXT(CLAY_STRING("Enter a message.."), CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
                                                                                           .fontSize = 16,
                                                                                           .textColor = {255, 255, 255, 255}}));
+                    // Component_TextBoxData username_data = (Component_TextBoxData) {
+                    //    .id = CLAY_STRING("username_textbox"),
+                    //    .textConfig = (Clay_TextElementConfig) {
+                    //                  .fontId = FONT_ID_BODY_16,
+                    //                  .fontSize = 16,
+                    //                  .textColor = {255, 255, 255, 255}},
+                    //    // .buffer = data->username_buf,
+                    //    // .frameCount = &(data->frameCount),
+                    //    // .len = &data->username_len,
+                    //    // .maxLen = sizeof(data->username_buf),
+                    //    // .placeholder = CLAY_STRING("Enter your username:"),
+                    //    // .eventData = (TextBoxEventData) {
+                    //    //   .focusList = data->focusList,
+                    //    //   .isFocus = data->focusList,
+                    //    //   .focus_len = 2,
+                    //    }
+                    //  };
+
+                     // renderTextBox(&username_data);
                         }
                     }
                     CLAY({.id = CLAY_ID("SendButton"),
@@ -360,6 +381,10 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
             } // End RightPane
         }
     }
+
+    // if (mouseButtonDown(0) && Clay_PointerOver(Clay_GetElementId(CLAY_STRING("ProfilePicture")))) {
+    //     // Handle profile picture clicked
+    // }
     Clay_RenderCommandArray renderCommands = Clay_EndLayout();
 
     for (int32_t i = 0; i < renderCommands.length; i++)

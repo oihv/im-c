@@ -1,10 +1,11 @@
+#include <stdint.h>
 #define CLAY_IMPLEMENTATION
 #include "clay.h"
 #include "renderers/raylib/clay_renderer_raylib.c"
-#include "shared-layouts/login_page.c"
+#include "shared-layouts/login-page.c"
 #include "shared-layouts/clay-video-demo.c"
 #include "page/test-page.c"
-// #include "network/websocket_service.h"
+#include "network/websocket_service.h"
 
 // This function is new since the video was published
 void HandleClayErrors(Clay_ErrorData errorData)
@@ -12,7 +13,7 @@ void HandleClayErrors(Clay_ErrorData errorData)
     printf("%s", errorData.errorText.chars);
 }
 
-Clay_RenderCommandArray ClayIMCTest_CreateLayout(char* buffer, int* frameCount);
+Clay_RenderCommandArray ClayIMCTest_CreateLayout(char* buffer, uint16_t* frameCount);
 
 int main(void)
 {
@@ -27,11 +28,9 @@ int main(void)
     SetTextureFilter(fonts[FONT_ID_BODY_16].texture, TEXTURE_FILTER_BILINEAR);
     Clay_SetMeasureTextFunction(Raylib_MeasureText, fonts);
 
-    LoginPage_Data loginData = LoginPage_Initialize(); // added
-     ClayVideoDemo_Data data = ClayVideoDemo_Initialize();
-    int frameCounts = 0; // For button testing
-
-    bool loggedIn = false; // added
+    LoginPage_Data loginData = LoginPage_Initialize(); 
+    ClayVideoDemo_Data data = ClayVideoDemo_Initialize();
+    uint16_t frameCounts = 0; // For button testing
 
     // Enable debugger
     Clay_SetDebugModeEnabled(true);
@@ -39,20 +38,20 @@ int main(void)
 
     // Initialize WebSocket service
     if (!websocket_service_init()) {
-      printf("Failed to initialize WebSocket service\n");
+      lwsl_err("Failed to initialize websocket connection!");
       return 1;
     }
 
-    while (!WindowShouldClose())
+    while (!WindowShouldClose() && !websocket_should_close())
     {
         // Update WebSocket service every frame
-    //    WebSocketData* ws_data = websocket_service_update();
+       WebSocketData* ws_data = websocket_service_update();
 
         // Handle new messages
-        // if (ws_data->has_new_message) {
-        //     printf("Received: %s\n", ws_data->message);
-        //     ws_data->has_new_message = false;
-        // }
+        if (ws_data->has_new_message) {
+            printf("Received: %s\n", ws_data->message);
+            ws_data->has_new_message = false;
+        }
 
         // Run once per frame
         Clay_SetLayoutDimensions((Clay_Dimensions){
@@ -75,15 +74,11 @@ int main(void)
         if (!loginData.loggedIn)
         {
             renderCommands = LoginPage_CreateLayout(&loginData);
-            if (loginData.loggedIn)
-            {
-                loggedIn = false;
-            }
+           // renderCommands = ClayIMCTest_CreateLayout(buffer, &frameCounts);
         }
         else
         {
             renderCommands = ClayVideoDemo_CreateLayout(&data);
-           // renderCommands = ClayIMCTest_CreateLayout(buffer, &frameCounts);
         }
 
         BeginDrawing();

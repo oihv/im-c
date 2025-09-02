@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "../components/textbox.h"
 
-Clay_RenderCommandArray ClayIMCTest_CreateLayout(char* buffer, int* frameCount) {
+Clay_RenderCommandArray ClayIMCTest_CreateLayout(char* buffer, uint16_t* frameCount) {
   Clay_BeginLayout();
 
   CLAY({ .id = CLAY_ID("OuterContainer"),
@@ -25,7 +25,7 @@ Clay_RenderCommandArray ClayIMCTest_CreateLayout(char* buffer, int* frameCount) 
        .maxLen = 254,
        .placeholder = CLAY_STRING("Write a message here..."),
        .textConfig = (Clay_TextElementConfig) {
-.fontId = FONT_ID_BODY_16,
+                                          .fontId = FONT_ID_BODY_16,
                                          .fontSize = 16,
                                          .textColor = {255, 255, 255, 255},
                                          .wrapMode = CLAY_TEXT_WRAP_WORDS}
