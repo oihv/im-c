@@ -1,9 +1,20 @@
 # lws minimal ws server
 
-## build
+## Development
 
+Configure CMake
+``` bash
+cmake . -B build
 ```
- $ cmake . && make
+
+Compile project
+``` bash
+cmake --build build
+```
+
+Run server
+``` bash
+build/Debug/lws-minimal-ws-server
 ```
 
 ## Commandline Options

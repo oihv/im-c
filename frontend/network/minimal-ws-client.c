@@ -26,9 +26,10 @@ static struct my_conn {
 } mco;
 
 static struct lws_context *context;
-static int interrupted, port = 443, ssl_connection = LCCSCF_USE_SSL;
-static const char *server_address = "libwebsockets.org",
-		  *pro = "dumb-increment-protocol";
+static int interrupted, port = 7681, ssl_connection = 0; // Disable
+// SSL
+static const char *server_address = "localhost",
+		  *pro = "lws-minimal";
 
 /*
  * The retry and backoff policy we want to use for our client connections

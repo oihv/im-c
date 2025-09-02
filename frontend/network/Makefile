@@ -236,6 +236,18 @@ minimal-ws-client.c.s:
 	cd /home/nikolas/Programming/testing/libwebsockets && $(MAKE) $(MAKESILENT) -f minimal-examples-lowlevel/ws-client/minimal-ws-client/CMakeFiles/lws-minimal-ws-client.dir/build.make minimal-examples-lowlevel/ws-client/minimal-ws-client/CMakeFiles/lws-minimal-ws-client.dir/minimal-ws-client.c.s
 .PHONY : minimal-ws-client.c.s
 
+# run the client based on OS
+BUILD_DIR = ./build/
+
+ifeq ($(OS),Windows_NT)
+	EXE_PATH = $(BUILD_DIR)Debug/lws-minimal-ws-client
+else
+	EXE_PATH = $(BUILD_DIR)lws-minimal-ws-client
+endif
+
+run:
+	$(EXE_PATH)
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"

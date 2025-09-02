@@ -18,12 +18,30 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(raylib)
 
-add_executable(im_c main.c)
+# Find libwebsockets
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBWEBSOCKETS REQUIRED libwebsockets)
 
-target_compile_options(im_c PUBLIC)
-target_include_directories(im_c PUBLIC .)
+add_executable(im_c 
+        main.c
+        network/websocket_service.c
+)
 
-target_link_libraries(im_c PUBLIC raylib)
+target_compile_options(im_c PUBLIC ${LIBWEBSOCKETS_CFLAGS_OTHER})
+target_include_directories(im_c PUBLIC 
+        .
+        ${LIBWEBSOCKETS_INCLUDE_DIRS}
+)
+
+target_link_libraries(im_c PUBLIC 
+        raylib
+        ${LIBWEBSOCKETS_LIBRARIES}
+)
+
+target_link_directories(im_c PUBLIC 
+        raylib
+        ${LIBWEBSOCKETS_LIBRARY_DIRS}
+)
 
 if(MSVC)
   set(CMAKE_C_FLAGS_DEBUG "/D CLAY_DEBUG")
