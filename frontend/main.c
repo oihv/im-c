@@ -4,7 +4,7 @@
 #include "shared-layouts/login_page.c"
 #include "shared-layouts/clay-video-demo.c"
 #include "page/test-page.c"
-#include "network/websocket_service.h"
+// #include "network/websocket_service.h"
 
 // This function is new since the video was published
 void HandleClayErrors(Clay_ErrorData errorData)
@@ -46,13 +46,13 @@ int main(void)
     while (!WindowShouldClose())
     {
         // Update WebSocket service every frame
-        WebSocketData* ws_data = websocket_service_update();
+    //    WebSocketData* ws_data = websocket_service_update();
 
         // Handle new messages
-        if (ws_data->has_new_message) {
-            printf("Received: %s\n", ws_data->message);
-            ws_data->has_new_message = false;
-        }
+        // if (ws_data->has_new_message) {
+        //     printf("Received: %s\n", ws_data->message);
+        //     ws_data->has_new_message = false;
+        // }
 
         // Run once per frame
         Clay_SetLayoutDimensions((Clay_Dimensions){

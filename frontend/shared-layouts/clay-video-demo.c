@@ -1,6 +1,7 @@
 #include "../clay.h"
 #include <stdlib.h>
 #include "mainpage.h"
+#include <string.h>
 
 void RenderHeaderButton(Clay_String text)
 {
@@ -46,11 +47,42 @@ typedef struct
 {
     Clay_String sender;
     Clay_String text;
+    bool isSender;   // true = user, false = bot/system
 } ChatMessage;
 
 #define MAX_MESSAGES 100
 ChatMessage chatMessages[MAX_MESSAGES];
 int chatMessageCount = 0;
+
+static inline Clay_String ClayStr(const char* s) {
+    return (Clay_String){ s, (int)strlen(s) }; // positional init: {ptr, length}
+}
+
+
+void AddBotReply(const char* replyText) {
+    if (chatMessageCount < MAX_MESSAGES) {
+        chatMessages[chatMessageCount].sender = CLAY_STRING("Bot");
+        chatMessages[chatMessageCount].text = (Clay_String){
+            .chars = replyText,
+            .length = (int)strlen(replyText)
+        };
+        chatMessages[chatMessageCount].isSender = false; // bot/system
+        chatMessageCount++;
+    }
+}
+
+void AddUserMessage(const char* userText) {
+    if (chatMessageCount < MAX_MESSAGES) {
+        chatMessages[chatMessageCount].sender = CLAY_STRING("Ben"); // or use ClayStr("Ben") if dynamic
+        chatMessages[chatMessageCount].text = (Clay_String){
+            .chars = userText,
+            .length = (int)strlen(userText)
+        };
+        chatMessages[chatMessageCount].isSender = true; // user
+        chatMessageCount++;
+    }
+}
+
 
 typedef struct
 {
@@ -116,14 +148,11 @@ void HandleSendInteraction(
 {
     if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME)
     {
-        if (chatMessageCount < MAX_MESSAGES)
-        {
-            chatMessages[chatMessageCount++] = (ChatMessage){
-                .sender = CLAY_STRING("Ben"),
-                .text = CLAY_STRING("Hello, this is a test message!")};
-        }
+        AddUserMessage("Hello, this is a test message!");
+        AddBotReply("Got your message ✅"); // <-- demo bot reply
     }
 }
+
 
 ClayVideoDemo_Data ClayVideoDemo_Initialize()
 {

@@ -19,28 +19,30 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(raylib)
 
 # Find libwebsockets
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(LIBWEBSOCKETS REQUIRED libwebsockets)
+# find_package(PkgConfig REQUIRED)
+# pkg_check_modules(LIBWEBSOCKETS REQUIRED libwebsockets)
 
 add_executable(im_c 
         main.c
         network/websocket_service.c
 )
 
-target_compile_options(im_c PUBLIC ${LIBWEBSOCKETS_CFLAGS_OTHER})
+target_compile_options(im_c PUBLIC 
+# ${LIBWEBSOCKETS_CFLAGS_OTHER}
+)
 target_include_directories(im_c PUBLIC 
         .
-        ${LIBWEBSOCKETS_INCLUDE_DIRS}
+        # ${LIBWEBSOCKETS_INCLUDE_DIRS}
 )
 
 target_link_libraries(im_c PUBLIC 
         raylib
-        ${LIBWEBSOCKETS_LIBRARIES}
+        # ${LIBWEBSOCKETS_LIBRARIES}
 )
 
 target_link_directories(im_c PUBLIC 
         raylib
-        ${LIBWEBSOCKETS_LIBRARY_DIRS}
+        # ${LIBWEBSOCKETS_LIBRARY_DIRS}
 )
 
 if(MSVC)
