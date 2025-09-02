@@ -19,9 +19,11 @@ Clay_RenderCommandArray ClayIMCTest_CreateLayout(char* buffer, int* frameCount) 
       }
   }) {
     Component_TextBoxData textData = {
+       .id = CLAY_STRING("Test Button"),
        .buffer = buffer,
        .frameCount = frameCount,
-       .max_len = 254,
+       .maxLen = 254,
+       .placeholder = CLAY_STRING("Write a message here..."),
        .textConfig = (Clay_TextElementConfig) {
 .fontId = FONT_ID_BODY_16,
                                          .fontSize = 16,

@@ -11,20 +11,22 @@ void HandleTextBoxInteraction(Clay_ElementId elementId,
   bool *isFocus = (bool *)userData;
   // If this button was clicked
   // TODO: Implement how to lose focus when other object is clicked
+  SetMouseCursor(MOUSE_CURSOR_IBEAM);
   if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
     *isFocus = true;
   }
 }
 
 void renderTextBox(Component_TextBoxData* data) {
-  CLAY({.layout = {.padding = {16, 16, 8, 8},
+  CLAY({.id = CLAY_SID(data->id),
+    .layout = {.padding = {16, 16, 8, 8},
                    .sizing = {.width = CLAY_SIZING_GROW(0),
                               .height = CLAY_SIZING_GROW(0, 50)}},
         .cornerRadius = CLAY_CORNER_RADIUS(5)}) {
     // TODO: store static variables somewhere
     static int len = 0;
-    size_t blink_len;
-    static bool isFocus = true; // for testing
+    size_t blink_len = 0;
+    static bool isFocus = false; // for testing
     int key = 0;
 
     if (isFocus) {
@@ -32,7 +34,7 @@ void renderTextBox(Component_TextBoxData* data) {
       (*data->frameCount)++;
 
       while (key > 0) {
-        if (len < MAX_INPUT_CHAR) {
+        if (len < data->maxLen) {
           if (data->buffer[len - 1] == '_')
             len--;
           data->buffer[len] = key;
@@ -97,6 +99,8 @@ void renderTextBox(Component_TextBoxData* data) {
 
     Clay_String buf_str = (Clay_String){
         .isStaticallyAllocated = false, .length = blink_len, .chars = data->buffer};
+
+    if (!isFocus && len == 0) CLAY_TEXT(data->placeholder, CLAY_TEXT_CONFIG(data->textConfig));
 
     CLAY_TEXT(buf_str, CLAY_TEXT_CONFIG(data->textConfig));
   }

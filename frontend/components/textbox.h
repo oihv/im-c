@@ -6,9 +6,11 @@
 #include "../clay.h"
 
 typedef struct Component_TextBoxData {
-  char *buffer;
-  size_t max_len;
-  int *frameCount;
+  Clay_String id;
+  char* buffer;
+  size_t maxLen;
+  int* frameCount;
+  Clay_String placeholder;
   Clay_TextElementConfig textConfig;
 
 } Component_TextBoxData;
