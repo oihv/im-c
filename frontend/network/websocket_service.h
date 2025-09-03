@@ -14,6 +14,9 @@ typedef struct {
 // Initialize the websocket service
 bool websocket_service_init(void);
 
+// Libuv signal
+bool websocket_should_close();
+
 // Call this every frame - returns updated data
 WebSocketData* websocket_service_update(void);
 
