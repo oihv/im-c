@@ -37,7 +37,7 @@ int main(void)
     Clay_SetDebugModeEnabled(true);
     char buffer[MAX_INPUT_CHAR + 1] = "\0";
 
-    // Initialize WebSocket service
+    //Initialize WebSocket service
     if (!websocket_service_init()) {
       printf("Failed to initialize WebSocket service\n");
       return 1;

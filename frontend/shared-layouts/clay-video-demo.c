@@ -47,42 +47,43 @@ typedef struct
 {
     Clay_String sender;
     Clay_String text;
-    bool isSender;   // true = user, false = bot/system
+    bool isSender; // true = user, false = bot/system
 } ChatMessage;
 
 #define MAX_MESSAGES 100
 ChatMessage chatMessages[MAX_MESSAGES];
 int chatMessageCount = 0;
 
-static inline Clay_String ClayStr(const char* s) {
-    return (Clay_String){ s, (int)strlen(s) }; // positional init: {ptr, length}
+static inline Clay_String ClayStr(const char *s)
+{
+    return (Clay_String){s, (int)strlen(s)}; // positional init: {ptr, length}
 }
 
-
-void AddBotReply(const char* replyText) {
-    if (chatMessageCount < MAX_MESSAGES) {
+void AddBotReply(const char *replyText)
+{
+    if (chatMessageCount < MAX_MESSAGES)
+    {
         chatMessages[chatMessageCount].sender = CLAY_STRING("Bot");
         chatMessages[chatMessageCount].text = (Clay_String){
             .chars = replyText,
-            .length = (int)strlen(replyText)
-        };
+            .length = (int)strlen(replyText)};
         chatMessages[chatMessageCount].isSender = false; // bot/system
         chatMessageCount++;
     }
 }
 
-void AddUserMessage(const char* userText) {
-    if (chatMessageCount < MAX_MESSAGES) {
+void AddUserMessage(const char *userText)
+{
+    if (chatMessageCount < MAX_MESSAGES)
+    {
         chatMessages[chatMessageCount].sender = CLAY_STRING("Ben"); // or use ClayStr("Ben") if dynamic
         chatMessages[chatMessageCount].text = (Clay_String){
             .chars = userText,
-            .length = (int)strlen(userText)
-        };
+            .length = (int)strlen(userText)};
         chatMessages[chatMessageCount].isSender = true; // user
         chatMessageCount++;
     }
 }
-
 
 typedef struct
 {
@@ -152,7 +153,6 @@ void HandleSendInteraction(
         AddBotReply("Got your message ✅"); // <-- demo bot reply
     }
 }
-
 
 ClayVideoDemo_Data ClayVideoDemo_Initialize()
 {
@@ -293,35 +293,45 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                                  .padding = CLAY_PADDING_ALL(16),
                                  .sizing = {
                                      .width = CLAY_SIZING_GROW(1),
-                                     .height = CLAY_SIZING_GROW(0)}}})
+                                     .height = CLAY_SIZING_GROW(1)}}})
 
                 {
                     for (int i = chatMessageCount - 1; i >= 0; i--)
                     {
                         ChatMessage message = chatMessages[i];
-                        CLAY({.layout = {.layoutDirection = CLAY_TOP_TO_BOTTOM,
-                                         .padding = CLAY_PADDING_ALL(8),
-                                         .sizing = {.width = CLAY_SIZING_FIT(1)}},
-                              .backgroundColor = {120, 120, 120, 255},
-                              .cornerRadius = CLAY_CORNER_RADIUS(6)})
-                        {
-                            CLAY_TEXT(message.sender, CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                                                        .fontSize = 14,
-                                                                        .textColor = {200, 200, 255, 255}}));
+                        bool isUser = message.isSender;
 
-                            CLAY_TEXT(message.text, CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                                                      .fontSize = 16,
-                                                                      .textColor = {255, 255, 255, 255}}));
+                        // Container row for alignment
+                        CLAY({.layout = {
+                                  .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                                  .sizing = {.width = CLAY_SIZING_GROW(0)}, // ✅ use GROW(0) for row, not full width
+                                  .childAlignment = {.x = isUser ? CLAY_ALIGN_X_RIGHT : CLAY_ALIGN_X_LEFT}}})
+                        {
+                            // Bubble itself
+                            CLAY({.layout = {
+                                      .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                                      .padding = CLAY_PADDING_ALL(10),
+                                      .sizing = {
+                                          .width = CLAY_SIZING_FIT(1) // ✅ bubble only fits its text
+                                      }},
+                                  .backgroundColor = isUser ? (Clay_Color){0, 120, 215, 255} : (Clay_Color){120, 120, 120, 255},
+                                  .cornerRadius = isUser ? (Clay_CornerRadius){.topLeft = 12, .topRight = 12, .bottomLeft = 12, .bottomRight = 2} : (Clay_CornerRadius){.topLeft = 12, .topRight = 12, .bottomLeft = 2, .bottomRight = 12}})
+                            {
+                                CLAY_TEXT(message.text, CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
+                                                                          .fontSize = 16,
+                                                                          .textColor = {255, 255, 255, 255}}));
+                            }
                         }
                     }
                 }
 
                 CLAY({.id = CLAY_ID("BottomBar"),
                       .layout = {
+                          .layoutDirection = CLAY_LEFT_TO_RIGHT, // Add this line
                           .sizing = {
                               .height = CLAY_SIZING_FIXED(60),
-                              .width = CLAY_SIZING_GROW(0)},
-                          .padding = {16, 16, 0, 0},
+                              .width = CLAY_SIZING_GROW(1)},
+                          .padding = CLAY_PADDING_ALL(16), // Change this line
                           .childGap = 16,
                           .childAlignment = {.y = CLAY_ALIGN_Y_CENTER}},
                       .backgroundColor = contentBackgroundColor,
