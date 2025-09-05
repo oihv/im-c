@@ -2,9 +2,18 @@
 #define LOGIN_PAGE
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
+
+typedef enum {
+  Disconnected,
+  Connecting,
+  Connected
+} ConnectStatus;
+
 typedef struct
 {
     bool loggedIn;
+    ConnectStatus status;
     char username[32];
     char password[32];
 

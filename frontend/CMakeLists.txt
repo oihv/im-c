@@ -38,18 +38,18 @@ target_compile_options(im_c PUBLIC
 )
 target_include_directories(im_c PUBLIC 
         .
-        # ${LIBWEBSOCKETS_INCLUDE_DIRS}
+        ${LIBWEBSOCKETS_INCLUDE_DIRS}
 )
 
 target_link_libraries(im_c PUBLIC 
         raylib
-        # ${LIBWEBSOCKETS_LIBRARIES}
+        ${LIBWEBSOCKETS_LIBRARIES}
         # ${LIBUV_LIBRARIES}
 )
 
 target_link_directories(im_c PUBLIC 
         raylib
-        # ${LIBWEBSOCKETS_LIBRARY_DIRS}
+        ${LIBWEBSOCKETS_LIBRARY_DIRS}
 )
 
 if(MSVC)

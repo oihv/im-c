@@ -1,3 +1,5 @@
+#include "shared-layouts/login-page.h"
+#include <stdio.h>
 #define CLAY_IMPLEMENTATION
 #include <stdint.h>
 #include "clay.h"
@@ -5,7 +7,7 @@
 #include "shared-layouts/login-page.c"
 #include "shared-layouts/clay-video-demo.c"
 #include "page/test-page.c"
-//#include "network/websocket_service.h"
+#include "network/websocket_service.h"
 
 // This function is new since the video was published
 void HandleClayErrors(Clay_ErrorData errorData)
@@ -36,22 +38,26 @@ int main(void)
     Clay_SetDebugModeEnabled(true);
     char buffer[MAX_INPUT_CHAR + 1] = "\0";
 
-    //Initialize WebSocket service
-    // if (!websocket_service_init()) {
-    //   lwsl_err("Failed to initialize websocket connection!");
-    //   return 1;
-    // }
 
     while (!WindowShouldClose())
     {
-    //     // Update WebSocket service every frame
-    //    WebSocketData* ws_data = websocket_service_update();
+        //Initialize WebSocket service
+        if (loginData.status == Connecting && !websocket_service_init()) {
+          lwsl_err("Failed to initialize websocket connection!");
+          return 1;
+        }
 
-    //     // Handle new messages
-    //     if (ws_data->has_new_message) {
-    //         printf("Received: %s\n", ws_data->message);
-    //         ws_data->has_new_message = false;
-    //     }
+        if (loginData.status == Connected) {
+
+            // Update WebSocket service every frame
+            WebSocketData* ws_data = websocket_service_update();
+
+            // Handle new messages
+            if (ws_data->has_new_message) {
+                printf("Received: %s\n", ws_data->message);
+                ws_data->has_new_message = false;
+            }
+        }
 
         // Run once per frame
         Clay_SetLayoutDimensions((Clay_Dimensions){
