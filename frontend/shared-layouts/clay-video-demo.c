@@ -27,6 +27,18 @@ void RenderDropdownMenuItem(Clay_String text)
     }
 }
 
+// Add this function to calculate responsive font size
+int GetResponsiveFontSize(int baseFontSize, int windowWidth, int windowHeight) {
+    // Base calculation on window width (you can adjust the formula)
+    float scaleFactor = (float)windowWidth / 1200.0f; // 1200px as reference width
+    
+    // Clamp the scale factor between 0.8 and 1.5 for reasonable limits
+    if (scaleFactor < 0.8f) scaleFactor = 0.8f;
+    if (scaleFactor > 1.5f) scaleFactor = 1.5f;
+    
+    return (int)(baseFontSize * scaleFactor);
+}
+
 typedef struct
 {
     Clay_String title;
@@ -152,7 +164,7 @@ void HandleSendInteraction(
     if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME)
     {
         AddUserMessage("Hello, this is a test message!");
-        AddBotReply("Got your message ✅"); // <-- demo bot reply
+        AddBotReply("Got your message?"); // <-- demo bot reply
     }
 }
 
@@ -167,6 +179,14 @@ ClayVideoDemo_Data ClayVideoDemo_Initialize()
 Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
 {
     data->frameArena.offset = 0;
+
+    // Get current window size for responsive fonts
+    int windowWidth = GetScreenWidth();   // Raylib function
+    int windowHeight = GetScreenHeight(); // Raylib function
+    
+    // Calculate responsive font sizes
+    int bodyFontSize = GetResponsiveFontSize(16, windowWidth, windowHeight);
+    int titleFontSize = GetResponsiveFontSize(20, windowWidth, windowHeight);
 
     Clay_BeginLayout();
 
@@ -213,7 +233,7 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                           .sizing = {.width = CLAY_SIZING_GROW(0)}}})
                 {
                     CLAY_TEXT(CLAY_STRING("IP Address: 127.0.0.1:1000"),
-                              CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16, .fontSize = 16, .textColor = {255, 255, 255, 255}}));
+                              CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16, .fontSize = bodyFontSize, .textColor = {255, 255, 255, 255}}));
                 }
 
                 // --- Username panel ---
@@ -225,7 +245,7 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                           .sizing = {.width = CLAY_SIZING_GROW(0)}}})
                 {
                     CLAY_TEXT(CLAY_STRING("Username: Ben"),
-                              CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16, .fontSize = 16, .textColor = {255, 255, 255, 255}}));
+                              CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16, .fontSize = bodyFontSize, .textColor = {255, 255, 255, 255}}));
                 }
 
                 // --- Document loop ---
@@ -243,7 +263,7 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                               .cornerRadius = CLAY_CORNER_RADIUS(8)})
                         {
                             CLAY_TEXT(document.title, CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                                                        .fontSize = 20,
+                                                                        .fontSize = titleFontSize,
                                                                         .textColor = {255, 255, 255, 255}}));
                         }
                     }
@@ -256,7 +276,7 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                         {
                             Clay_OnHover(HandleSidebarInteraction, (intptr_t)clickData);
                             CLAY_TEXT(document.title, CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                                                        .fontSize = 20,
+                                                                        .fontSize = titleFontSize,
                                                                         .textColor = {255, 255, 255, 255}}));
                         }
                     }
@@ -281,7 +301,7 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                           .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER}}})
                 {
                     CLAY_TEXT(CLAY_STRING("Logout"),
-                              CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16, .fontSize = 16, .textColor = {255, 255, 255, 255}}));
+                              CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16, .fontSize = bodyFontSize, .textColor = {255, 255, 255, 255}}));
                 }
             }
 
@@ -327,7 +347,7 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                                   .cornerRadius = isUser ? (Clay_CornerRadius){.topLeft = 12, .topRight = 12, .bottomLeft = 12, .bottomRight = 2} : (Clay_CornerRadius){.topLeft = 12, .topRight = 12, .bottomLeft = 2, .bottomRight = 12}})
                             {
                                 CLAY_TEXT(message.text, CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                                                          .fontSize = 16,
+                                                                          .fontSize = bodyFontSize,
                                                                           .textColor = {255, 255, 255, 255}}));
                             }
                         }
@@ -349,7 +369,7 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                     CLAY({
                         .id = CLAY_ID("InputBox"),
                         .layout = {.sizing = {
-                                       .width = CLAY_SIZING_GROW(0),
+                                       .width = CLAY_SIZING_GROW(1),
                                    }},
                     })
                     {
@@ -371,7 +391,7 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                                   .cornerRadius = CLAY_CORNER_RADIUS(5)})
                             {
                                 CLAY_TEXT(CLAY_STRING("Enter a message.."), CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                                                                              .fontSize = 16,
+                                                                                              .fontSize = bodyFontSize,
                                                                                               .textColor = {200, 200, 200, 255}}));
                             }
                             // Component_TextBoxData username_data = (Component_TextBoxData) {
@@ -418,7 +438,7 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                         Clay_OnHover(HandleSendInteraction, (intptr_t)clickData);
 
                         CLAY_TEXT(CLAY_STRING("Send"), CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                                                         .fontSize = 16,
+                                                                         .fontSize = bodyFontSize,
                                                                          .textColor = {255, 255, 255, 255}}));
                     }
                 }
