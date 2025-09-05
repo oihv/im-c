@@ -375,16 +375,31 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                             // renderTextBox(&username_data);
                         }
                     }
+                    Clay_Color base = {140, 140, 140, 255};
+                    Clay_Color hover = {160, 160, 160, 255};
+
+                    Clay_Color btnColor = base;
+                    if (Clay_Hovered())
+                        btnColor = hover;
+
                     CLAY({.id = CLAY_ID("SendButton"),
-                          .layout = {.sizing = {.width = CLAY_SIZING_FIXED(60)},
-                                     .childAlignment = {.x = CLAY_ALIGN_X_RIGHT}}})
+                          .layout = {.sizing = {.width = CLAY_SIZING_FIXED(100),
+                                                .height = CLAY_SIZING_FIXED(40)},
+                                     .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
+                                     .padding = CLAY_PADDING_ALL(8)},
+                          .backgroundColor = btnColor,
+                          .cornerRadius = CLAY_CORNER_RADIUS(5)})
                     {
                         SendClickData *clickData = (SendClickData *)(data->frameArena.memory + data->frameArena.offset);
                         *clickData = (SendClickData){0};
                         data->frameArena.offset += sizeof(SendClickData);
 
+                        // Still use OnHover, but inside your handler check if the mouse was clicked
                         Clay_OnHover(HandleSendInteraction, (intptr_t)clickData);
-                        RenderHeaderButton(CLAY_STRING("Send"));
+
+                        CLAY_TEXT(CLAY_STRING("Send"), CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
+                                                                         .fontSize = 16,
+                                                                         .textColor = {255, 255, 255, 255}}));
                     }
                 }
 
