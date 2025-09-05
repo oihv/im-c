@@ -1,7 +1,17 @@
 #ifndef WEBSOCKET_SERVICE_H
 #define WEBSOCKET_SERVICE_H
+#if defined(_WIN32)           
+	#define NOGDI             // All GDI defines and routines
+	#define NOUSER            // All USER defines and routines
+#endif
 
+// #include <windows.h> // or any library that uses Windows.h
 #include <libwebsockets.h>
+
+#if defined(_WIN32)           // raylib uses these names as function parameters
+	#undef near
+	#undef far
+#endif
 #include <stdbool.h>
 
 typedef struct {

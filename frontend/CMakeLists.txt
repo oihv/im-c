@@ -22,11 +22,11 @@ FetchContent_MakeAvailable(raylib)
 # find_package(PkgConfig REQUIRED)
 # pkg_check_modules(LIBWEBSOCKETS REQUIRED libwebsockets)
 
-find_package(PkgConfig REQUIRED)
+# find_package(PkgConfig REQUIRED)
 # Find libwebsockets
-pkg_check_modules(LIBWEBSOCKETS REQUIRED libwebsockets)
+# pkg_check_modules(LIBWEBSOCKETS REQUIRED libwebsockets)
 # Find libuv
-pkg_check_modules(LIBUV REQUIRED libuv)
+# pkg_check_modules(LIBUV REQUIRED libuv)
 
 add_executable(im_c 
         main.c
@@ -34,22 +34,22 @@ add_executable(im_c
 )
 
 target_compile_options(im_c PUBLIC 
-${LIBWEBSOCKETS_CFLAGS_OTHER}
+# ${LIBWEBSOCKETS_CFLAGS_OTHER}
 )
 target_include_directories(im_c PUBLIC 
         .
-        ${LIBWEBSOCKETS_INCLUDE_DIRS}
+        # ${LIBWEBSOCKETS_INCLUDE_DIRS}
 )
 
 target_link_libraries(im_c PUBLIC 
         raylib
-        ${LIBWEBSOCKETS_LIBRARIES}
-        ${LIBUV_LIBRARIES}
+        # ${LIBWEBSOCKETS_LIBRARIES}
+        # ${LIBUV_LIBRARIES}
 )
 
 target_link_directories(im_c PUBLIC 
         raylib
-        ${LIBWEBSOCKETS_LIBRARY_DIRS}
+        # ${LIBWEBSOCKETS_LIBRARY_DIRS}
 )
 
 if(MSVC)
@@ -64,3 +64,25 @@ add_custom_command(
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/resources
         ${CMAKE_CURRENT_BINARY_DIR}/resources)
+
+        # Add this after your target_link_libraries section
+if(WIN32)
+    # Copy websockets.dll to output directory after build
+    # Alternative: if websockets.dll is in a different location, find it
+    find_file(WEBSOCKETS_DLL 
+        NAMES websockets.dll libwebsockets.dll
+        PATHS 
+            "${CMAKE_BINARY_DIR}"
+            "${CMAKE_PREFIX_PATH}/bin"
+            "C:/vcpkg/installed/x64-windows/bin"
+        PATH_SUFFIXES bin
+    )
+    
+    if(WEBSOCKETS_DLL)
+        add_custom_command(TARGET im_c POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${WEBSOCKETS_DLL}"
+            $<TARGET_FILE_DIR:im_c>
+        )
+    endif()
+endif()

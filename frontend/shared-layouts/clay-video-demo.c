@@ -301,22 +301,22 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                     for (int i = chatMessageCount - 1; i >= 0; i--)
                     {
                         ChatMessage message = chatMessages[i];
+
                         bool isUser = message.isSender;
 
-                        // Container row for alignment
                         CLAY({.layout = {
                                   .layoutDirection = CLAY_LEFT_TO_RIGHT,
-                                  .sizing = {.width = CLAY_SIZING_GROW(0)}, // ✅ use GROW(0) for row, not full width
+                                  .sizing = {.width = CLAY_SIZING_GROW(1)},
                                   .childAlignment = {.x = isUser ? CLAY_ALIGN_X_RIGHT : CLAY_ALIGN_X_LEFT}}})
                         {
-                            // Bubble itself
                             CLAY({.layout = {
                                       .layoutDirection = CLAY_TOP_TO_BOTTOM,
                                       .padding = CLAY_PADDING_ALL(10),
-                                      .sizing = {
-                                          .width = CLAY_SIZING_FIT(1) // ✅ bubble only fits its text
-                                      }},
-                                  .backgroundColor = isUser ? (Clay_Color){0, 120, 215, 255} : (Clay_Color){120, 120, 120, 255},
+                                      .sizing = {.width = CLAY_SIZING_FIT(1)}},
+                                  .backgroundColor = isUser ? (Clay_Color){0, 120, 215, 255} : // User bubble (blue)
+                                                         (Clay_Color){120, 120, 120, 255},     // Bot bubble (gray)
+
+                                  // Rounded corners like WhatsApp
                                   .cornerRadius = isUser ? (Clay_CornerRadius){.topLeft = 12, .topRight = 12, .bottomLeft = 12, .bottomRight = 2} : (Clay_CornerRadius){.topLeft = 12, .topRight = 12, .bottomLeft = 2, .bottomRight = 12}})
                             {
                                 CLAY_TEXT(message.text, CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
@@ -354,25 +354,25 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                             CLAY_TEXT(CLAY_STRING("Enter a message.."), CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
                                                                                           .fontSize = 16,
                                                                                           .textColor = {255, 255, 255, 255}}));
-                    // Component_TextBoxData username_data = (Component_TextBoxData) {
-                    //    .id = CLAY_STRING("username_textbox"),
-                    //    .textConfig = (Clay_TextElementConfig) {
-                    //                  .fontId = FONT_ID_BODY_16,
-                    //                  .fontSize = 16,
-                    //                  .textColor = {255, 255, 255, 255}},
-                    //    // .buffer = data->username_buf,
-                    //    // .frameCount = &(data->frameCount),
-                    //    // .len = &data->username_len,
-                    //    // .maxLen = sizeof(data->username_buf),
-                    //    // .placeholder = CLAY_STRING("Enter your username:"),
-                    //    // .eventData = (TextBoxEventData) {
-                    //    //   .focusList = data->focusList,
-                    //    //   .isFocus = data->focusList,
-                    //    //   .focus_len = 2,
-                    //    }
-                    //  };
+                            // Component_TextBoxData username_data = (Component_TextBoxData) {
+                            //    .id = CLAY_STRING("username_textbox"),
+                            //    .textConfig = (Clay_TextElementConfig) {
+                            //                  .fontId = FONT_ID_BODY_16,
+                            //                  .fontSize = 16,
+                            //                  .textColor = {255, 255, 255, 255}},
+                            //    // .buffer = data->username_buf,
+                            //    // .frameCount = &(data->frameCount),
+                            //    // .len = &data->username_len,
+                            //    // .maxLen = sizeof(data->username_buf),
+                            //    // .placeholder = CLAY_STRING("Enter your username:"),
+                            //    // .eventData = (TextBoxEventData) {
+                            //    //   .focusList = data->focusList,
+                            //    //   .isFocus = data->focusList,
+                            //    //   .focus_len = 2,
+                            //    }
+                            //  };
 
-                     // renderTextBox(&username_data);
+                            // renderTextBox(&username_data);
                         }
                     }
                     CLAY({.id = CLAY_ID("SendButton"),
