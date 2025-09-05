@@ -266,12 +266,19 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                 CLAY({.layout = {.sizing = {.height = CLAY_SIZING_GROW(1)}}});
 
                 // --- Logout button ---
+                Clay_Color logoutBase = {120, 120, 120, 255};
+                Clay_Color logoutHover = {140, 140, 140, 255};
+                Clay_Color logoutColor = logoutBase;
+                if (Clay_Hovered())
+                    logoutColor = logoutHover;
+
                 CLAY({.id = CLAY_ID("LogoutButton"),
-                      .backgroundColor = {120, 120, 120, 255},
+                      .backgroundColor = logoutColor, // Use hover color
                       .cornerRadius = CLAY_CORNER_RADIUS(8),
                       .layout = {
                           .padding = CLAY_PADDING_ALL(12),
-                          .sizing = {.width = CLAY_SIZING_GROW(0)}}})
+                          .sizing = {.width = CLAY_SIZING_GROW(0)},
+                          .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER}}})
                 {
                     CLAY_TEXT(CLAY_STRING("Logout"),
                               CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16, .fontSize = 16, .textColor = {255, 255, 255, 255}}));
@@ -342,7 +349,7 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                     CLAY({
                         .id = CLAY_ID("InputBox"),
                         .layout = {.sizing = {
-                                       .width = CLAY_SIZING_GROW(120),
+                                       .width = CLAY_SIZING_GROW(0),
                                    }},
                     })
                     {
@@ -351,9 +358,22 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                               .backgroundColor = {140, 140, 140, 255},
                               .cornerRadius = CLAY_CORNER_RADIUS(5)})
                         {
-                            CLAY_TEXT(CLAY_STRING("Enter a message.."), CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                                                                          .fontSize = 16,
-                                                                                          .textColor = {255, 255, 255, 255}}));
+                            // Add hover colors for input box
+                            Clay_Color inputBase = {140, 140, 140, 255};
+                            Clay_Color inputHover = {160, 160, 160, 255};
+                            Clay_Color inputColor = inputBase;
+                            if (Clay_Hovered())
+                                inputColor = inputHover;
+
+                            CLAY({.layout = {.padding = CLAY_PADDING_ALL(3),
+                                             .sizing = {.width = CLAY_SIZING_GROW(0)}},
+                                  .backgroundColor = inputColor,
+                                  .cornerRadius = CLAY_CORNER_RADIUS(5)})
+                            {
+                                CLAY_TEXT(CLAY_STRING("Enter a message.."), CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
+                                                                                              .fontSize = 16,
+                                                                                              .textColor = {200, 200, 200, 255}}));
+                            }
                             // Component_TextBoxData username_data = (Component_TextBoxData) {
                             //    .id = CLAY_STRING("username_textbox"),
                             //    .textConfig = (Clay_TextElementConfig) {
@@ -383,10 +403,10 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                         btnColor = hover;
 
                     CLAY({.id = CLAY_ID("SendButton"),
-                          .layout = {.sizing = {.width = CLAY_SIZING_FIXED(100),
-                                                .height = CLAY_SIZING_FIXED(40)},
+                          .layout = {.sizing = {.width = CLAY_SIZING_FIXED(70),
+                                                .height = CLAY_SIZING_FIXED(30)},
                                      .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
-                                     .padding = CLAY_PADDING_ALL(8)},
+                                     .padding = CLAY_PADDING_ALL(6)},
                           .backgroundColor = btnColor,
                           .cornerRadius = CLAY_CORNER_RADIUS(5)})
                     {
