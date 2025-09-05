@@ -13,6 +13,7 @@
 	#undef far
 #endif
 #include <stdbool.h>
+#include "../clay.h"
 
 typedef struct {
   char message[512];
@@ -20,6 +21,18 @@ typedef struct {
   bool connected;
   char connection_status[100];
 } WebSocketData;
+
+static struct my_conn {
+  lws_sorted_usec_list_t sul;
+  struct lws *wsi;
+  uint16_t retry_count;
+  char send_buffer[256];
+  bool has_data_to_send;
+  Clay_String ipaddr;
+  Clay_String port;
+} ws_connection;
+
+typedef struct my_conn my_conn;
 
 // Initialize the websocket service
 bool websocket_service_init(void);

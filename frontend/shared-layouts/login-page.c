@@ -14,13 +14,43 @@ typedef struct
     intptr_t memory;
 } LoginPage_Arena;
 
-
 LoginPage_Data LoginPage_Initialize()
 {
     // LoginPage_Data data = {.arena = {.memory = (intptr_t)malloc(1024)}};
     // memset((void*)data.arena.memory, 0, 1024);
-    LoginPage_Data data = { .focus_len = 2, .loggedIn = true }; // Initialize to 0
+    LoginPage_Data data = { .focus_len = 2, .loggedIn = false }; // Initialize to 0
     return data;
+}
+
+// TODO: maybe add enum for better error handling?
+bool parseSocketData(char* socketData, char* ipaddr, char* port) {
+  char* p = socketData;
+  int i = 0;
+  for(; i < 25 && *p != ':'; i++) {
+    // TODO: return error when length is inappropriate
+    ipaddr[i] = *(p + i);
+  }
+
+  i++; // Still point at ';'
+
+  int j = 0;
+  for (; j < 4 && *p != '\0'; i++, j++) {
+    port[j] = *(p + i);
+  }
+
+  if (j < 3) return false;
+
+  return true;
+}
+
+void HandleLoginButton(
+    Clay_ElementId elementId,
+    Clay_PointerData pointerData,
+    intptr_t userData)
+{
+    if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME)
+    {
+    }
 }
 
 Clay_RenderCommandArray LoginPage_CreateLayout(LoginPage_Data *data)

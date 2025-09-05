@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include "../network/websocket_service.h"
 
 typedef enum {
   Disconnected,
@@ -27,6 +28,7 @@ typedef struct
     bool focusList[2];
     size_t focus_len;
 
+    my_conn* ws_conn;
     // LoginPage_Arena arena;
 } LoginPage_Data;
 #endif

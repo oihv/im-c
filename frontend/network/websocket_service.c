@@ -7,13 +7,6 @@
 #include "../clay.h"
 
 static struct lws_context *ws_context = NULL;
-static struct my_conn {
-  lws_sorted_usec_list_t sul;
-  struct lws *wsi;
-  uint16_t retry_count;
-  char send_buffer[256];
-  bool has_data_to_send;
-} ws_connection;
 
 static WebSocketData ws_data = {0};
 
@@ -28,24 +21,6 @@ static const lws_retry_bo_t retry = {
     .jitter_percent = 20,
 };
 
-// Global variable for shutdown coordination
-static volatile bool ws_should_shutdown = false;
-
-bool websocket_should_close() {
-  return ws_should_shutdown;
-}
-
-// In your websocket service
-void websocket_signal_cb(void *handle, int signum) {
-    switch (signum) {
-    case SIGTERM:
-    case SIGINT:
-        // Set flag for graceful shutdown
-        ws_should_shutdown = true;
-        exit(1);
-        break;
-    }
-}
 
 static void connect_client(lws_sorted_usec_list_t *sul) {
   // printf("connect_client called.\n");
