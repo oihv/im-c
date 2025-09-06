@@ -248,40 +248,6 @@ Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
                               CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16, .fontSize = bodyFontSize, .textColor = {255, 255, 255, 255}}));
                 }
 
-                // --- Document loop ---
-                for (int i = 0; i < documents.length; i++)
-                {
-                    Document document = documents.documents[i];
-                    Clay_LayoutConfig sidebarButtonLayout = {
-                        .sizing = {.width = CLAY_SIZING_GROW(0)},
-                        .padding = CLAY_PADDING_ALL(16)};
-
-                    if (i == data->selectedDocumentIndex)
-                    {
-                        CLAY({.layout = sidebarButtonLayout,
-                              .backgroundColor = {120, 120, 120, 255},
-                              .cornerRadius = CLAY_CORNER_RADIUS(8)})
-                        {
-                            CLAY_TEXT(document.title, CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                                                        .fontSize = titleFontSize,
-                                                                        .textColor = {255, 255, 255, 255}}));
-                        }
-                    }
-                    else
-                    {
-                        SidebarClickData *clickData = (SidebarClickData *)(data->frameArena.memory + data->frameArena.offset);
-                        *clickData = (SidebarClickData){.requestedDocumentIndex = i, .selectedDocumentIndex = &data->selectedDocumentIndex};
-                        data->frameArena.offset += sizeof(SidebarClickData);
-                        CLAY({.layout = sidebarButtonLayout, .backgroundColor = (Clay_Color){120, 120, 120, Clay_Hovered() ? 120 : 0}, .cornerRadius = CLAY_CORNER_RADIUS(8)})
-                        {
-                            Clay_OnHover(HandleSidebarInteraction, (intptr_t)clickData);
-                            CLAY_TEXT(document.title, CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                                                        .fontSize = titleFontSize,
-                                                                        .textColor = {255, 255, 255, 255}}));
-                        }
-                    }
-                }
-
                 // --- Spacer to push logout button down ---
                 CLAY({.layout = {.sizing = {.height = CLAY_SIZING_GROW(1)}}});
 
