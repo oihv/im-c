@@ -1,14 +1,15 @@
 #include "websocket_service.h"
+#include "../clay.h"
 #include <libwebsockets.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <signal.h>
-#include "../clay.h"
 
 static struct lws_context *ws_context = NULL;
 
 static WebSocketData ws_data = {0};
+
+my_conn ws_connection = {0};
 
 // Retry policy
 static const uint32_t backoff_ms[] = {1000, 2000, 3000, 4000, 5000};
@@ -21,16 +22,20 @@ static const lws_retry_bo_t retry = {
     .jitter_percent = 20,
 };
 
-
 static void connect_client(lws_sorted_usec_list_t *sul) {
   // printf("connect_client called.\n");
   // What does container_of macro do?
-  struct my_conn *m = lws_container_of(sul, struct my_conn, sul);
+  my_conn *m = lws_container_of(sul, my_conn, sul);
   struct lws_client_connect_info i = {0};
 
   i.context = ws_context;
-  i.port = 7681;
-  i.address = "localhost";
+  i.port = m->port;
+  i.address = m->ipaddr;
+  printf("%d\n", m->port);
+  printf("connect: %p\n", m->ipaddr);
+  // printf("%s\n", m->ipaddr);
+  // i.port = 7681;
+  // i.address = "localhost";
   i.path = "/";
   i.host = i.address;
   i.origin = i.address;
@@ -54,13 +59,13 @@ static int callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
                             void *user, void *in, size_t len) {
   switch (reason) {
   case LWS_CALLBACK_CLIENT_ESTABLISHED:
-      // printf("LWS_CALLBACK_CLIENT_ESTABLISHED\n");
+    printf("LWS_CALLBACK_CLIENT_ESTABLISHED\n");
     ws_data.connected = true;
     strcpy(ws_data.connection_status, "Connected");
     break;
 
   case LWS_CALLBACK_CLIENT_RECEIVE:
-      // printf("LWS_CALLBACK_CLIENT_RECEIVE\n");
+    printf("LWS_CALLBACK_CLIENT_RECEIVE\n");
     // Copy received message to our data structure
     if (len < sizeof(ws_data.message) - 1) {
       memcpy(ws_data.message, in, len);
@@ -70,44 +75,48 @@ static int callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
     break;
 
   case LWS_CALLBACK_CLIENT_WRITEABLE:
-      // printf("LWS_CALLBACK_CLIENT_WRITEABLE\n");
+    printf("LWS_CALLBACK_CLIENT_WRITEABLE\n");
     if (ws_connection.has_data_to_send) {
       // printf("tried to write\n");
-        unsigned char buf[LWS_PRE + 512];
-        unsigned char *p = &buf[LWS_PRE];
+      unsigned char buf[LWS_PRE + 512];
+      unsigned char *p = &buf[LWS_PRE];
 
-        int len = sprintf((char *)p, "%s", ws_connection.send_buffer);
+      int len = sprintf((char *)p, "%s", ws_connection.send_buffer);
 
-        if (lws_write(wsi, p, len, LWS_WRITE_TEXT) < len) {
-            return -1;
-        }
+      if (lws_write(wsi, p, len, LWS_WRITE_TEXT) < len) {
+        return -1;
+      }
 
-        ws_connection.has_data_to_send = false;  // Clear flag
+      ws_connection.has_data_to_send = false; // Clear flag
     }
     break;
 
   case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-      printf("LWS_CALLBACK_CLIENT_CONNECTION_ERROR\n");
+		lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
+			 in ? (char *)in : "(null)");
     ws_data.connected = false;
+    ws_data.error = true;
     strcpy(ws_data.connection_status, "Connection error");
     goto do_retry;
 
   case LWS_CALLBACK_CLIENT_CLOSED:
-      // printf("LWS_CALLBACK_CLIENT_CLOSED\n");
+    printf("LWS_CALLBACK_CLIENT_CLOSED\n");
     ws_data.connected = false;
     strcpy(ws_data.connection_status, "Disconnected");
     goto do_retry;
 
   default:
-      // printf("default\n");
-    
+    printf("default\n");
+
     break;
   }
-  return 0;
+  return lws_callback_http_dummy(wsi, reason, user, in, len);
+
 
 do_retry:
   if (lws_retry_sul_schedule_retry_wsi(wsi, &ws_connection.sul, connect_client,
                                        &ws_connection.retry_count)) {
+    lwsl_err("%s: connection attempts exhausted\n", __func__);
     strcpy(ws_data.connection_status, "Retry failed");
   }
   return 0;
@@ -115,8 +124,7 @@ do_retry:
 
 static const struct lws_protocols protocols[] = {
     {"lws-minimal-client", callback_minimal, 0, 0, 0, NULL, 0},
-    LWS_PROTOCOL_LIST_TERM
-};
+    LWS_PROTOCOL_LIST_TERM};
 
 bool websocket_service_init(void) {
   lwsl_debug("websocket_service_init called.\n");
@@ -127,14 +135,22 @@ bool websocket_service_init(void) {
   info.protocols = protocols;
   // info.signal_cb = websocket_signal_cb;
 
- 	int logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
- 	lws_set_log_level(logs, NULL);
+  int logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
+  lws_set_log_level(logs, NULL);
 
   ws_context = lws_create_context(&info);
   if (!ws_context)
     return false;
 
-  // Start connection attempt
+  strcpy(ws_data.connection_status, "Ready to Connect");
+  return true;
+}
+
+bool websocket_service_connect() {
+  if (!ws_context)
+    return false;
+
+  // NOW schedule the connection
   lws_sul_schedule(ws_context, 0, &ws_connection.sul, connect_client, 1);
 
   strcpy(ws_data.connection_status, "Connecting...");
@@ -150,16 +166,18 @@ WebSocketData *websocket_service_update(void) {
   if (ws_connection.wsi)
     lws_callback_on_writable(ws_connection.wsi); // Keep loop active
   else
-    strcpy(ws_data.connection_status, "Connecting...");
+    strcpy(ws_data.connection_status, "Disconnected");
+
   return &ws_data;
 }
 
-void websocket_service_send(const char* message) {
-    if (ws_connection.wsi && strlen(message) < sizeof(ws_connection.send_buffer)) {
-        strcpy(ws_connection.send_buffer, message);
-        ws_connection.has_data_to_send = true;
-        lws_callback_on_writable(ws_connection.wsi);  // Request write permission
-    }
+void websocket_service_send(const char *message) {
+  if (ws_connection.wsi &&
+      strlen(message) < sizeof(ws_connection.send_buffer)) {
+    strcpy(ws_connection.send_buffer, message);
+    ws_connection.has_data_to_send = true;
+    lws_callback_on_writable(ws_connection.wsi); // Request write permission
+  }
 }
 
 void websocket_service_cleanup(void) {

@@ -26,7 +26,7 @@ static struct my_conn {
 } mco;
 
 static struct lws_context *context;
-static int interrupted, port = 7681, ssl_connection = 0; // Disable
+static int interrupted, port = 7777, ssl_connection = 0; // Disable
 // SSL
 static const char *server_address = "localhost",
 		  *pro = "lws-minimal";

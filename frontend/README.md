@@ -20,3 +20,7 @@ To check what can goes into the declaration of a clay element, look at the decla
 ## Ackowledgements
 
 Clay (https://github.com/nicbarker/clay)
+
+## TODO
+- [ ] Fix text input focusing where it can only focus and not resetting the
+focus of other 

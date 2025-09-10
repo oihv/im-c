@@ -7,8 +7,10 @@
 
 typedef enum {
   Disconnected,
+  InitiateConnect,
   Connecting,
-  Connected
+  Connected,
+  ConnectionError
 } ConnectStatus;
 
 typedef struct
@@ -16,14 +18,15 @@ typedef struct
     bool loggedIn;
     ConnectStatus status;
     char username[32];
-    char password[32];
+    char ipaddr[32];
+    char port[32];
 
     uint16_t frameCount;
 
     char username_buf[32];
     size_t username_len;
-    char pass_buf[32];
-    size_t pass_len;
+    char ipaddr_buf[32];
+    size_t ipaddr_len;
 
     bool focusList[2];
     size_t focus_len;

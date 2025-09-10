@@ -52,11 +52,13 @@ target_link_directories(im_c PUBLIC
         ${LIBWEBSOCKETS_LIBRARY_DIRS}
 )
 
+# Adding address sanitizer, delete when compiling for release
 if(MSVC)
-  set(CMAKE_C_FLAGS_DEBUG "/D CLAY_DEBUG")
+  set(CMAKE_C_FLAGS_DEBUG "/D CLAY_DEBUG /fsanitize=address")
 else()
-  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
-  set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
+  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DCLAY_DEBUG -fsanitize=address")
+  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
+  set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -fsanitize=address")
 endif()
 
 add_custom_command(
