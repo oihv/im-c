@@ -83,13 +83,6 @@ void renderTextBox(Component_TextBoxData* data) {
           }
         }
 
-        // TODO! implement enter message, with a separate logic so it can be
-        // used by button too
-        if (key == KEY_ENTER) {
-          data->buffer[0] = '\0';
-          *len = 0;
-        }
-
         key = GetKeyPressed();
       }
     }
