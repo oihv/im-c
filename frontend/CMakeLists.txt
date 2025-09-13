@@ -18,15 +18,6 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(raylib)
 
-# Find libwebsockets
-# find_package(PkgConfig REQUIRED)
-# pkg_check_modules(LIBWEBSOCKETS REQUIRED libwebsockets)
-
-# find_package(PkgConfig REQUIRED)
-# Find libwebsockets
-# pkg_check_modules(LIBWEBSOCKETS REQUIRED libwebsockets)
-# Find libuv
-# pkg_check_modules(LIBUV REQUIRED libuv)
 
 add_executable(im_c 
         main.c
@@ -56,7 +47,13 @@ target_link_directories(im_c PUBLIC
 if(MSVC)
   set(CMAKE_C_FLAGS_DEBUG "/D CLAY_DEBUG /fsanitize=address")
 else()
-  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DCLAY_DEBUG -fsanitize=address")
+# Find libwebsockets
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(LIBWEBSOCKETS REQUIRED libwebsockets)
+
+# Find libwebsockets
+  pkg_check_modules(LIBWEBSOCKETS REQUIRED libwebsockets)
+  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DCLAY_DEBUG -g -fsanitize=address -DGLFW_BUILD_WAYLAND=ON")
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
   set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -fsanitize=address")
 endif()
