@@ -14,17 +14,7 @@ void resetTextBoxFocus(bool* focusList, size_t len) {
 
 void HandleTextBoxInteraction(Clay_ElementId elementId,
                               Clay_PointerData pointerData, intptr_t userData) {
-  // bool* isFocus = (bool*)userData;
-  // TextBoxEventData* data = (TextBoxEventData*) userData;
-  // bool* isFocus = data->isFocus;
-  // TODO: Implement how to lose focus when other object is clicked
   SetMouseCursor(MOUSE_CURSOR_IBEAM);
-  if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-    // size_t focus_len  = data->focus_len;
-    // bool* focusList = data->focusList;
-    // resetTextBoxFocus(focusList, focus_len);
-    // *isFocus = true;
-  }
 }
 
 void renderTextBox(Component_TextBoxData* data) {
