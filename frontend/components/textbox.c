@@ -20,7 +20,7 @@ void HandleTextBoxInteraction(Clay_ElementId elementId,
 void renderTextBox(Component_TextBoxData* data) {
   CLAY({.id = CLAY_SID(data->id),
     .layout = {.sizing = {.width = CLAY_SIZING_GROW(0),
-                          .height = CLAY_SIZING_GROW(.min = 16)}},
+                          .height = CLAY_SIZING_GROW(.min = data->textConfig.fontSize)}},
         .cornerRadius = CLAY_CORNER_RADIUS(5)}) {
     size_t* len = data->len;
     size_t blink_len = 0;
