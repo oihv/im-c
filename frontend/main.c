@@ -42,8 +42,12 @@ int main(void) {
   SetTextureFilter(fonts[FONT_ID_BODY_16].texture, TEXTURE_FILTER_BILINEAR);
   Clay_SetMeasureTextFunction(Raylib_MeasureText, fonts);
 
+  // Initialize persistent data per page
   LoginPage_Data loginData = LoginPage_Initialize();
   ClayVideoDemo_Data data = ClayVideoDemo_Initialize();
+
+  // Connect login credentials
+  data.login_credentials = &loginData;
   uint16_t frameCounts = 0; // For button testing
 
   // Enable debugger

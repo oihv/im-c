@@ -61,6 +61,8 @@ Clay_RenderCommandArray LoginPage_CreateLayout(LoginPage_Data *data) {
   // data->arena.offset = 0;
   Clay_BeginLayout();
 
+  int textBoxFontSize = 24;
+
   Clay_Sizing layoutExpand = {.width = CLAY_SIZING_GROW(0),
                               .height = CLAY_SIZING_GROW(0)};
 
@@ -92,7 +94,7 @@ Clay_RenderCommandArray LoginPage_CreateLayout(LoginPage_Data *data) {
       }) {
         CLAY_TEXT(CLAY_STRING("EggChat"),
                   CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                    .fontSize = 32,
+                                    .fontSize = 64,
                                     .textColor = {255, 255, 255, 255}}));
       };
 
@@ -131,7 +133,7 @@ Clay_RenderCommandArray LoginPage_CreateLayout(LoginPage_Data *data) {
               .id = CLAY_STRING("username_textbox"),
               .textConfig =
                   (Clay_TextElementConfig){.fontId = FONT_ID_BODY_16,
-                                           .fontSize = 16,
+                                           .fontSize = textBoxFontSize,
                                            .textColor = {255, 255, 255, 255}},
               .buffer = data->username_buf,
               .frameCount = &(data->frameCount),
@@ -181,7 +183,7 @@ Clay_RenderCommandArray LoginPage_CreateLayout(LoginPage_Data *data) {
               .id = CLAY_STRING("ipaddr_textbox"),
               .textConfig =
                   (Clay_TextElementConfig){.fontId = FONT_ID_BODY_16,
-                                           .fontSize = 16,
+                                           .fontSize = textBoxFontSize,
                                            .textColor = {255, 255, 255, 255}},
               .buffer = data->ipaddr_buf,
               .frameCount = &(data->frameCount),
@@ -223,6 +225,8 @@ Clay_RenderCommandArray LoginPage_CreateLayout(LoginPage_Data *data) {
                      .childAlignment = {.x = CLAY_ALIGN_X_CENTER,
                                         .y = CLAY_ALIGN_Y_CENTER}},
       }) {
+        Clay_Color base = {140, 140, 140, 255};
+        Clay_Color hover = {120, 120, 120, 255};
         CLAY({.id = CLAY_ID("LoginButton"),
               .layout = {.padding = {16, 16, 8, 8},
                          .sizing = {.width = CLAY_SIZING_FIT(0),
@@ -230,11 +234,11 @@ Clay_RenderCommandArray LoginPage_CreateLayout(LoginPage_Data *data) {
                          .childGap = 8,
                          .childAlignment = {.x = CLAY_ALIGN_X_CENTER,
                                             .y = CLAY_ALIGN_Y_CENTER}},
-              .backgroundColor = {140, 140, 140, 255},
+              .backgroundColor = (Clay_Hovered()) ? hover : base,
               .cornerRadius = CLAY_CORNER_RADIUS(5)}) {
-          CLAY_TEXT(CLAY_STRING("LOGIN"),
+          CLAY_TEXT(CLAY_STRING("Login"),
                     CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                      .fontSize = 18,
+                                      .fontSize = 32,
                                       .textColor = {255, 255, 255, 255}}));
         }
         if (data->status == ConnectionError) {
