@@ -4,7 +4,7 @@
 #include "../components/textbox.h"
 #include "../network/websocket_service.h"
 #include "../renderers/raylib/raylib.h"
-#include "login-page.h"
+#include "login_page.h"
 #include "mainpage.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -265,7 +265,7 @@ Clay_RenderCommandArray LoginPage_CreateLayout(LoginPage_Data *data) {
     }
   }
 
-  // For now, super simple: auto-login just for demo
+  // For now, super simple: auto-login just for testing
   // data->loggedIn = true;
 
   return Clay_EndLayout();

@@ -1,9 +1,8 @@
 #include "../clay.h"
-#include "../components/textbox.c"
-#include <stdio.h>
 #include "../components/textbox.h"
+#include "../shared-layouts/mainpage.h"
 
-Clay_RenderCommandArray ClayIMCTest_CreateLayout(char* buffer, uint16_t* frameCount) {
+Clay_RenderCommandArray DebugPage_CreateLayout(char* buffer, uint16_t* frameCount) {
   Clay_BeginLayout();
 
   CLAY({ .id = CLAY_ID("OuterContainer"),

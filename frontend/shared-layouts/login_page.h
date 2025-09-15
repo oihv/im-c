@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include "../clay.h"
 #include "../network/websocket_service.h"
 
 typedef enum {
@@ -34,4 +35,9 @@ typedef struct
     my_conn* ws_conn;
     // LoginPage_Arena arena;
 } LoginPage_Data;
+
+// Function declarations
+LoginPage_Data LoginPage_Initialize(void);
+Clay_RenderCommandArray LoginPage_CreateLayout(LoginPage_Data *data);
+
 #endif

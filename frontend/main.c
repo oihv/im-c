@@ -1,33 +1,29 @@
 #include "renderers/raylib/raylib.h"
-#include "shared-layouts/login-page.h"
+#include "shared-layouts/login_page.h"
 #include <stdio.h>
 #define CLAY_IMPLEMENTATION
 #include "clay.h"
 #include "network/websocket_service.h"
-#include "network/message_types.h"
-#include "page/test-page.c"
+#include "components/textbox.c"
+#include "page/debug_page.c"
 #include "renderers/raylib/clay_renderer_raylib.c"
-#include "shared-layouts/clay-video-demo.c"
-#include "shared-layouts/login-page.c"
+#include "shared-layouts/chat_interface.c"
+#include "shared-layouts/login_page.c"
 #include <stdint.h>
 
 // Forward declaration
 extern my_conn ws_connection;
 
-// This function is new since the video was published
+// Error handling helper
 void HandleClayErrors(Clay_ErrorData errorData) {
   printf("%s", errorData.errorText.chars);
 }
 
-Clay_RenderCommandArray ClayIMCTest_CreateLayout(char *buffer,
-                                                 uint16_t *frameCount);
-
 int main(void) {
   Clay_Raylib_Initialize(
-      1024, 768, "Introducing Clay Demo",
-      FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT |
-          FLAG_VSYNC_HINT); // Extra parameters to this function are new since
-                            // the video was published
+       1024, 768, "EggChat",
+       FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI | FLAG_MSAA_4X_HINT |
+           FLAG_VSYNC_HINT);
 
   uint64_t clayRequiredMemory = Clay_MinMemorySize();
   Clay_Arena clayMemory = Clay_CreateArenaWithCapacityAndMemory(
@@ -35,8 +31,7 @@ int main(void) {
   Clay_Initialize(
       clayMemory,
       (Clay_Dimensions){.width = GetScreenWidth(), .height = GetScreenHeight()},
-      (Clay_ErrorHandler){HandleClayErrors}); // This final argument is new
-                                              // since the video was published
+      (Clay_ErrorHandler){HandleClayErrors});
   Font fonts[1];
   fonts[FONT_ID_BODY_16] =
       LoadFontEx("resources/Roboto-Regular.ttf", 48, 0, 400);
@@ -45,7 +40,7 @@ int main(void) {
 
   // Initialize persistent data per page
   LoginPage_Data loginData = LoginPage_Initialize();
-  ClayVideoDemo_Data data = ClayVideoDemo_Initialize();
+  ChatApp_Data data = ChatApp_Initialize();
 
   // Connect login credentials
   data.login_credentials = &loginData;
@@ -73,7 +68,7 @@ int main(void) {
       // Update WebSocket service every frame
       WebSocketData *ws_data = websocket_service_update();
       
-      // Pass WebSocket data to the demo data
+       // Pass WebSocket data to the chat app data
       data.ws_data = ws_data;
 
       // Check if connection succeeded
@@ -110,9 +105,9 @@ int main(void) {
     Clay_RenderCommandArray renderCommands;
     if (!loginData.loggedIn) {
       renderCommands = LoginPage_CreateLayout(&loginData);
-      // renderCommands = ClayIMCTest_CreateLayout(buffer, &frameCounts);
+      // renderCommands = DebugPage_CreateLayout(buffer, &frameCounts);
     } else {
-      renderCommands = ClayVideoDemo_CreateLayout(&data);
+      renderCommands = ChatApp_CreateLayout(&data);
     }
 
     BeginDrawing();
@@ -120,6 +115,5 @@ int main(void) {
     Clay_Raylib_Render(renderCommands, fonts);
     EndDrawing();
   }
-  // This function is new since the video was published
   Clay_Raylib_Close();
 }
