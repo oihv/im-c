@@ -12,4 +12,5 @@ else
 endif
 
 run:
+	cmake --build build
 	$(EXE_PATH)
