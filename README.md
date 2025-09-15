@@ -4,9 +4,27 @@ An instant messaging toy project written in C.
 ## Usage Instruction
 Follow the readme in both 'frontend/' and 'backend/' dir
 
+## Testing
+
+Run the comprehensive test suite:
+
+```bash
+./tests/run_tests.sh
+```
+
+Or run individual test categories:
+
+```bash
+cd tests/build
+./test_message_types    # Unit tests for message handling
+./test_textbox          # Unit tests for textbox components
+./test_ui_components    # UI component logic tests
+```
+
+See `tests/README.md` for detailed testing documentation.
 
 ## TODO
-- [ ] figure out how to do autows_connectionated testing, both backend and frontend (how to test ui, especially)
+- [x] figure out how to do automated testing, both backend and frontend (how to test ui, especially)
 - [ ] from the automated test, generate test report
 
 ### frontend
