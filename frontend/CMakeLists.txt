@@ -22,6 +22,7 @@ FetchContent_MakeAvailable(raylib)
 add_executable(im_c 
         main.c
         network/websocket_service.c
+        network/message_types.c
 )
 
 target_compile_options(im_c PUBLIC 

@@ -14,9 +14,10 @@
 #endif
 #include <stdbool.h>
 #include "../clay.h"
+#include "message_types.h"
 
 typedef struct {
-  char message[512];
+  MessageList* messages;
   bool has_new_message;
   bool connected;
   bool error;
@@ -47,7 +48,10 @@ bool websocket_should_close();
 WebSocketData* websocket_service_update(void);
 
 // Send a message to the server
-void websocket_service_send(const char* message);
+void websocket_service_send_message(const Message* message);
+
+// Send a simple text message
+void websocket_service_send_text(const char* username, const char* text);
 
 // Cleanup
 void websocket_service_cleanup(void);

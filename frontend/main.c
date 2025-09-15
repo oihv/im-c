@@ -4,6 +4,7 @@
 #define CLAY_IMPLEMENTATION
 #include "clay.h"
 #include "network/websocket_service.h"
+#include "network/message_types.h"
 #include "page/test-page.c"
 #include "renderers/raylib/clay_renderer_raylib.c"
 #include "shared-layouts/clay-video-demo.c"
@@ -71,6 +72,9 @@ int main(void) {
     if (loginData.status == Connected || loginData.status == Connecting) {
       // Update WebSocket service every frame
       WebSocketData *ws_data = websocket_service_update();
+      
+      // Pass WebSocket data to the demo data
+      data.ws_data = ws_data;
 
       // Check if connection succeeded
       if (ws_data->connected == true) loginData.loggedIn = true;
@@ -80,9 +84,9 @@ int main(void) {
         printf("loh\n");
       }
 
-      // Handle new messages
+      // Handle new messages (optional: for debugging)
       if (ws_data->has_new_message) {
-        printf("Received: %s\n", ws_data->message);
+        printf("New messages received and will be displayed in UI!\n");
         ws_data->has_new_message = false;
       }
     }
@@ -110,7 +114,6 @@ int main(void) {
     ClearBackground(BLACK);
     Clay_Raylib_Render(renderCommands, fonts);
     EndDrawing();
-    websocket_service_send("Hello from client!");
   }
   // This function is new since the video was published
   Clay_Raylib_Close();

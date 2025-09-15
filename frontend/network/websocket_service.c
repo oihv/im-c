@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/time.h>
 
 static struct lws_context *ws_context = NULL;
 
@@ -66,11 +67,34 @@ static int callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 
   case LWS_CALLBACK_CLIENT_RECEIVE:
     printf("LWS_CALLBACK_CLIENT_RECEIVE\n");
-    // Copy received message to our data structure
-    if (len < sizeof(ws_data.message) - 1) {
-      memcpy(ws_data.message, in, len);
-      ws_data.message[len] = '\0';
-      ws_data.has_new_message = true;
+    // Parse and store the received message
+    if (len < 2048) { // Reasonable message size limit
+      char temp_buffer[2048];
+      memcpy(temp_buffer, in, len);
+      temp_buffer[len] = '\0';
+      
+      Message parsed_message;
+      if (message_parse_from_string(temp_buffer, &parsed_message)) {
+        if (ws_data.messages) {
+          message_list_add(ws_data.messages, &parsed_message);
+          ws_data.has_new_message = true;
+        }
+      } else {
+        // Fallback for simple text messages
+        Message simple_message = {0};
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        simple_message.timestamp = tv.tv_sec * 1000000ULL + tv.tv_usec;
+        simple_message.type = MSG_TYPE_CHAT;
+        strcpy(simple_message.username, "Unknown");
+        strncpy(simple_message.content, temp_buffer, MAX_MESSAGE_LENGTH - 1);
+        simple_message.content[MAX_MESSAGE_LENGTH - 1] = '\0';
+        
+        if (ws_data.messages) {
+          message_list_add(ws_data.messages, &simple_message);
+          ws_data.has_new_message = true;
+        }
+      }
     }
     break;
 
@@ -142,6 +166,14 @@ bool websocket_service_init(void) {
   if (!ws_context)
     return false;
 
+  // Initialize message list
+  ws_data.messages = message_list_create(100); // Store up to 100 messages
+  if (!ws_data.messages) {
+    lws_context_destroy(ws_context);
+    ws_context = NULL;
+    return false;
+  }
+
   strcpy(ws_data.connection_status, "Ready to Connect");
   return true;
 }
@@ -171,16 +203,42 @@ WebSocketData *websocket_service_update(void) {
   return &ws_data;
 }
 
-void websocket_service_send(const char *message) {
-  if (ws_connection.wsi &&
-      strlen(message) < sizeof(ws_connection.send_buffer)) {
-    strcpy(ws_connection.send_buffer, message);
+void websocket_service_send_message(const Message* message) {
+  if (!message || !ws_connection.wsi) return;
+  
+  char serialized[2048];
+  int len = message_serialize_to_string(message, serialized, sizeof(serialized));
+  
+  if (len > 0 && len < sizeof(ws_connection.send_buffer)) {
+    strcpy(ws_connection.send_buffer, serialized);
     ws_connection.has_data_to_send = true;
-    lws_callback_on_writable(ws_connection.wsi); // Request write permission
+    lws_callback_on_writable(ws_connection.wsi);
   }
 }
 
+void websocket_service_send_text(const char* username, const char* text) {
+  if (!username || !text) return;
+  
+  Message message = {0};
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  message.timestamp = tv.tv_sec * 1000000ULL + tv.tv_usec;
+  message.type = MSG_TYPE_CHAT;
+  strncpy(message.username, username, MAX_USERNAME_LENGTH - 1);
+  message.username[MAX_USERNAME_LENGTH - 1] = '\0';
+  strncpy(message.content, text, MAX_MESSAGE_LENGTH - 1);
+  message.content[MAX_MESSAGE_LENGTH - 1] = '\0';
+  strcpy(message.metadata, "");
+  
+  websocket_service_send_message(&message);
+}
+
 void websocket_service_cleanup(void) {
+  if (ws_data.messages) {
+    message_list_destroy(ws_data.messages);
+    ws_data.messages = NULL;
+  }
+  
   if (ws_context) {
     lws_context_destroy(ws_context);
     ws_context = NULL;
