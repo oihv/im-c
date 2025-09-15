@@ -81,12 +81,11 @@ int main(void) {
       else if (ws_data->error == true) {
         loginData.loggedIn = false;
         loginData.status = ConnectionError;
-        printf("loh\n");
       }
 
       // Handle new messages (optional: for debugging)
       if (ws_data->has_new_message) {
-        printf("New messages received and will be displayed in UI!\n");
+        // printf("New messages received and will be displayed in UI!\n");
         ws_data->has_new_message = false;
       }
     }
@@ -97,6 +96,12 @@ int main(void) {
 
     Vector2 mousePosition = GetMousePosition();
     Vector2 scrollDelta = GetMouseWheelMoveV();
+    
+    // Enhance scroll sensitivity and smoothness
+    float scrollMultiplier = 3.0f; // Increase scroll sensitivity
+    scrollDelta.x *= scrollMultiplier;
+    scrollDelta.y *= scrollMultiplier;
+    
     Clay_SetPointerState((Clay_Vector2){mousePosition.x, mousePosition.y},
                          IsMouseButtonDown(0));
     Clay_UpdateScrollContainers(

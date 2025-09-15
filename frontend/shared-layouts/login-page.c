@@ -259,7 +259,6 @@ Clay_RenderCommandArray LoginPage_CreateLayout(LoginPage_Data *data) {
             data->status = InitiateConnect;
             ws_connection.ipaddr = data->ipaddr;
             ws_connection.port = atoi(data->port);
-            printf("loginpage: %p\n", ws_connection.ipaddr);
           }
         }
       }

@@ -60,13 +60,13 @@ static int callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
                             void *user, void *in, size_t len) {
   switch (reason) {
   case LWS_CALLBACK_CLIENT_ESTABLISHED:
-    printf("LWS_CALLBACK_CLIENT_ESTABLISHED\n");
+    // printf("LWS_CALLBACK_CLIENT_ESTABLISHED\n");
     ws_data.connected = true;
     strcpy(ws_data.connection_status, "Connected");
     break;
 
   case LWS_CALLBACK_CLIENT_RECEIVE:
-    printf("LWS_CALLBACK_CLIENT_RECEIVE\n");
+    // printf("LWS_CALLBACK_CLIENT_RECEIVE\n");
     // Parse and store the received message
     if (len < 2048) { // Reasonable message size limit
       char temp_buffer[2048];
@@ -99,7 +99,7 @@ static int callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
     break;
 
   case LWS_CALLBACK_CLIENT_WRITEABLE:
-    printf("LWS_CALLBACK_CLIENT_WRITEABLE\n");
+    // printf("LWS_CALLBACK_CLIENT_WRITEABLE\n");
     if (ws_connection.has_data_to_send) {
       // printf("tried to write\n");
       unsigned char buf[LWS_PRE + 512];
@@ -124,13 +124,13 @@ static int callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
     goto do_retry;
 
   case LWS_CALLBACK_CLIENT_CLOSED:
-    printf("LWS_CALLBACK_CLIENT_CLOSED\n");
+    // printf("LWS_CALLBACK_CLIENT_CLOSED\n");
     ws_data.connected = false;
     strcpy(ws_data.connection_status, "Disconnected");
     goto do_retry;
 
   default:
-    printf("default\n");
+    // printf("default\n");
 
     break;
   }
