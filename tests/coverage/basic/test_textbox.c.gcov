@@ -1,0 +1,57 @@
+        -:    0:Source:/home/nikolas/Programming/repos/im-c/tests/unit/test_textbox.c
+        -:    0:Graph:build/CMakeFiles/test_textbox.dir/unit/test_textbox.c.gcno
+        -:    0:Data:build/CMakeFiles/test_textbox.dir/unit/test_textbox.c.gcda
+        -:    0:Runs:1
+        -:    1:#include "unity.h"
+        -:    2:#include <stdbool.h>
+        -:    3:#include <string.h>
+        -:    4:
+        -:    5:// Simple test functions for textbox logic without dependencies
+        3:    6:void resetTextBoxFocus(bool* focusList, size_t len) {
+        3:    7:    if (!focusList) return;
+        8:    8:    for (size_t i = 0; i < len; i++) {
+        6:    9:        focusList[i] = false;
+        -:   10:    }
+        -:   11:}
+        -:   12:
+        3:   13:void setUp(void) {
+        3:   14:}
+        -:   15:
+        3:   16:void tearDown(void) {
+        3:   17:}
+        -:   18:
+        1:   19:void test_resetTextBoxFocus_all_false(void) {
+        1:   20:    bool focusList[5] = {true, true, false, true, false};
+        -:   21:    
+        1:   22:    resetTextBoxFocus(focusList, 5);
+        -:   23:    
+        6:   24:    for (int i = 0; i < 5; i++) {
+       5*:   25:        TEST_ASSERT_FALSE(focusList[i]);
+        -:   26:    }
+        1:   27:}
+        -:   28:
+        1:   29:void test_resetTextBoxFocus_empty_list(void) {
+        1:   30:    bool* focusList = NULL;
+        -:   31:    
+        1:   32:    resetTextBoxFocus(focusList, 0);
+        -:   33:    
+        -:   34:    // No assertion needed - test passes if it doesn't crash
+        1:   35:}
+        -:   36:
+        1:   37:void test_resetTextBoxFocus_single_element(void) {
+        1:   38:    bool focusList[1] = {true};
+        -:   39:    
+        1:   40:    resetTextBoxFocus(focusList, 1);
+        -:   41:    
+       1*:   42:    TEST_ASSERT_FALSE(focusList[0]);
+        1:   43:}
+        -:   44:
+        1:   45:int main(void) {
+        1:   46:    UNITY_BEGIN();
+        -:   47:    
+        1:   48:    RUN_TEST(test_resetTextBoxFocus_all_false);
+        1:   49:    RUN_TEST(test_resetTextBoxFocus_empty_list);
+        1:   50:    RUN_TEST(test_resetTextBoxFocus_single_element);
+        -:   51:    
+        1:   52:    return UNITY_END();
+        -:   53:}

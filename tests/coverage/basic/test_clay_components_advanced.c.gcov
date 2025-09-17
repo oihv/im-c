@@ -1,0 +1,426 @@
+        -:    0:Source:/home/nikolas/Programming/repos/im-c/tests/ui/test_clay_components_advanced.c
+        -:    0:Graph:build/CMakeFiles/test_clay_components_advanced.dir/ui/test_clay_components_advanced.c.gcno
+        -:    0:Data:build/CMakeFiles/test_clay_components_advanced.dir/ui/test_clay_components_advanced.c.gcda
+        -:    0:Runs:1
+        -:    1:#include "unity.h"
+        -:    2:#include <stdbool.h>
+        -:    3:#include <string.h>
+        -:    4:#include <stdlib.h>
+        -:    5:#include <stdio.h>
+        -:    6:
+        -:    7:/* Mock Clay structures for headless testing */
+        -:    8:typedef struct {
+        -:    9:    float x, y, width, height;
+        -:   10:} Clay_BoundingBox;
+        -:   11:
+        -:   12:typedef struct {
+        -:   13:    float x, y;
+        -:   14:} Clay_Vector2;
+        -:   15:
+        -:   16:typedef struct {
+        -:   17:    bool has_focus;
+        -:   18:    char text[256];
+        -:   19:    int cursor_position;
+        -:   20:    int max_length;
+        -:   21:} Clay_TextBox;
+        -:   22:
+        -:   23:typedef struct {
+        -:   24:    Clay_BoundingBox bounding_box;
+        -:   25:    bool is_hovered;
+        -:   26:    bool is_pressed;
+        -:   27:    bool is_clicked;
+        -:   28:} Clay_Button;
+        -:   29:
+        -:   30:typedef enum {
+        -:   31:    CLAY_COLOR_RED = 0xFF0000,
+        -:   32:    CLAY_COLOR_GREEN = 0x00FF00,
+        -:   33:    CLAY_COLOR_BLUE = 0x0000FF,
+        -:   34:    CLAY_COLOR_WHITE = 0xFFFFFF,
+        -:   35:    CLAY_COLOR_BLACK = 0x000000
+        -:   36:} Clay_Color;
+        -:   37:
+        -:   38:/* UI component functions */
+       10:   39:bool clay_point_in_bounds(Clay_Vector2 point, Clay_BoundingBox bounds) {
+       17:   40:    return point.x >= bounds.x && 
+        7:   41:           point.x <= bounds.x + bounds.width &&
+       24:   42:           point.y >= bounds.y && 
+        7:   43:           point.y <= bounds.y + bounds.height;
+        -:   44:}
+        -:   45:
+       26:   46:bool clay_textbox_handle_input(Clay_TextBox *textbox, char character) {
+       26:   47:    if (!textbox || !textbox->has_focus) return false;
+        -:   48:    
+       24:   49:    if (character == '\b') { /* Backspace */
+        4:   50:        if (textbox->cursor_position > 0) {
+        -:   51:            int i;
+       28:   52:            for (i = textbox->cursor_position - 1; i < (int)strlen(textbox->text); i++) {
+       25:   53:                textbox->text[i] = textbox->text[i + 1];
+        -:   54:            }
+        3:   55:            textbox->cursor_position--;
+        3:   56:            return true;
+        -:   57:        }
+       20:   58:    } else if (character >= 32 && character <= 126) { /* Printable ASCII */
+       17:   59:        int len = strlen(textbox->text);
+       17:   60:        if (len < textbox->max_length - 1) {
+        -:   61:            int i;
+        -:   62:            
+        -:   63:            /* Shift characters to the right */
+       62:   64:            for (i = len; i >= textbox->cursor_position; i--) {
+       46:   65:                textbox->text[i + 1] = textbox->text[i];
+        -:   66:            }
+        -:   67:            
+       16:   68:            textbox->text[textbox->cursor_position] = character;
+       16:   69:            textbox->cursor_position++;
+       16:   70:            return true;
+        -:   71:        }
+        -:   72:    }
+        -:   73:    
+        5:   74:    return false;
+        -:   75:}
+        -:   76:
+        5:   77:void clay_textbox_set_focus(Clay_TextBox *textbox, bool focus) {
+        5:   78:    if (textbox) {
+        4:   79:        textbox->has_focus = focus;
+        -:   80:    }
+        5:   81:}
+        -:   82:
+        3:   83:bool clay_button_handle_click(Clay_Button *button, Clay_Vector2 click_position) {
+        3:   84:    if (!button) return false;
+        -:   85:    
+        2:   86:    if (clay_point_in_bounds(click_position, button->bounding_box)) {
+        1:   87:        button->is_clicked = true;
+        1:   88:        return true;
+        -:   89:    }
+        -:   90:    
+        1:   91:    return false;
+        -:   92:}
+        -:   93:
+        3:   94:void clay_button_update_hover(Clay_Button *button, Clay_Vector2 mouse_position) {
+        3:   95:    if (!button) return;
+        -:   96:    
+        2:   97:    button->is_hovered = clay_point_in_bounds(mouse_position, button->bounding_box);
+        -:   98:}
+        -:   99:
+        -:  100:/* Layout testing functions */
+        3:  101:bool clay_layout_elements_overlap(Clay_BoundingBox box1, Clay_BoundingBox box2) {
+        4:  102:    return !(box1.x + box1.width <= box2.x || 
+        1:  103:             box2.x + box2.width <= box1.x ||
+        1:  104:             box1.y + box1.height <= box2.y || 
+        1:  105:             box2.y + box2.height <= box1.y);
+        -:  106:}
+        -:  107:
+        1:  108:float clay_layout_calculate_total_width(Clay_BoundingBox *elements, int count) {
+        1:  109:    float total_width = 0;
+        -:  110:    int i;
+        -:  111:    
+        4:  112:    for (i = 0; i < count; i++) {
+        3:  113:        float right_edge = elements[i].x + elements[i].width;
+        3:  114:        if (right_edge > total_width) {
+        2:  115:            total_width = right_edge;
+        -:  116:        }
+        -:  117:    }
+        -:  118:    
+        1:  119:    return total_width;
+        -:  120:}
+        -:  121:
+        -:  122:/* Test cases */
+       19:  123:void setUp(void) {
+        -:  124:    /* Setup before each test */
+       19:  125:}
+        -:  126:
+       19:  127:void tearDown(void) {
+        -:  128:    /* Cleanup after each test */
+       19:  129:}
+        -:  130:
+        1:  131:void test_clay_point_in_bounds_inside(void) {
+        1:  132:    Clay_BoundingBox box = {10, 20, 100, 50};
+        1:  133:    Clay_Vector2 point = {50, 40};
+        -:  134:    
+       1*:  135:    TEST_ASSERT_TRUE(clay_point_in_bounds(point, box));
+        1:  136:}
+        -:  137:
+        1:  138:void test_clay_point_in_bounds_outside(void) {
+        1:  139:    Clay_BoundingBox box = {10, 20, 100, 50};
+        1:  140:    Clay_Vector2 point = {5, 40};
+        -:  141:    
+       1*:  142:    TEST_ASSERT_FALSE(clay_point_in_bounds(point, box));
+        1:  143:}
+        -:  144:
+        1:  145:void test_clay_point_in_bounds_on_edge(void) {
+        1:  146:    Clay_BoundingBox box = {10, 20, 100, 50};
+        1:  147:    Clay_Vector2 point1 = {10, 40}; /* Left edge */
+        1:  148:    Clay_Vector2 point2 = {110, 40}; /* Right edge */
+        1:  149:    Clay_Vector2 point3 = {50, 20}; /* Top edge */
+        1:  150:    Clay_Vector2 point4 = {50, 70}; /* Bottom edge */
+        -:  151:    
+       1*:  152:    TEST_ASSERT_TRUE(clay_point_in_bounds(point1, box));
+       1*:  153:    TEST_ASSERT_TRUE(clay_point_in_bounds(point2, box));
+       1*:  154:    TEST_ASSERT_TRUE(clay_point_in_bounds(point3, box));
+       1*:  155:    TEST_ASSERT_TRUE(clay_point_in_bounds(point4, box));
+        1:  156:}
+        -:  157:
+        1:  158:void test_clay_textbox_input_normal_character(void) {
+        1:  159:    Clay_TextBox textbox = {0};
+        1:  160:    textbox.has_focus = true;
+        1:  161:    textbox.max_length = 256;
+        1:  162:    strcpy(textbox.text, "Hello");
+        1:  163:    textbox.cursor_position = 5;
+        -:  164:    
+       1*:  165:    TEST_ASSERT_TRUE(clay_textbox_handle_input(&textbox, ' '));
+        1:  166:    TEST_ASSERT_EQUAL_STRING("Hello ", textbox.text);
+        1:  167:    TEST_ASSERT_EQUAL_INT(6, textbox.cursor_position);
+        1:  168:}
+        -:  169:
+        1:  170:void test_clay_textbox_input_insertion(void) {
+        1:  171:    Clay_TextBox textbox = {0};
+        1:  172:    textbox.has_focus = true;
+        1:  173:    textbox.max_length = 256;
+        1:  174:    strcpy(textbox.text, "Hello World");
+        1:  175:    textbox.cursor_position = 5; /* Between "Hello" and " World" */
+        -:  176:    
+       1*:  177:    TEST_ASSERT_TRUE(clay_textbox_handle_input(&textbox, '!'));
+        1:  178:    TEST_ASSERT_EQUAL_STRING("Hello! World", textbox.text);
+        1:  179:    TEST_ASSERT_EQUAL_INT(6, textbox.cursor_position);
+        1:  180:}
+        -:  181:
+        1:  182:void test_clay_textbox_backspace_middle(void) {
+        1:  183:    Clay_TextBox textbox = {0};
+        1:  184:    textbox.has_focus = true;
+        1:  185:    textbox.max_length = 256;
+        1:  186:    strcpy(textbox.text, "Hello World");
+        1:  187:    textbox.cursor_position = 5; /* After "Hello" */
+        -:  188:    
+       1*:  189:    TEST_ASSERT_TRUE(clay_textbox_handle_input(&textbox, '\b'));
+        1:  190:    TEST_ASSERT_EQUAL_STRING("Hell World", textbox.text);
+        1:  191:    TEST_ASSERT_EQUAL_INT(4, textbox.cursor_position);
+        1:  192:}
+        -:  193:
+        1:  194:void test_clay_textbox_backspace_at_start(void) {
+        1:  195:    Clay_TextBox textbox = {0};
+        1:  196:    textbox.has_focus = true;
+        1:  197:    textbox.max_length = 256;
+        1:  198:    strcpy(textbox.text, "Hello");
+        1:  199:    textbox.cursor_position = 0;
+        -:  200:    
+       1*:  201:    TEST_ASSERT_FALSE(clay_textbox_handle_input(&textbox, '\b'));
+        1:  202:    TEST_ASSERT_EQUAL_STRING("Hello", textbox.text);
+        1:  203:    TEST_ASSERT_EQUAL_INT(0, textbox.cursor_position);
+        1:  204:}
+        -:  205:
+        1:  206:void test_clay_textbox_max_length_limit(void) {
+        1:  207:    Clay_TextBox textbox = {0};
+        1:  208:    textbox.has_focus = true;
+        1:  209:    textbox.max_length = 6; /* Small limit for testing */
+        1:  210:    strcpy(textbox.text, "Hello");
+        1:  211:    textbox.cursor_position = 5;
+        -:  212:    
+       1*:  213:    TEST_ASSERT_FALSE(clay_textbox_handle_input(&textbox, '!'));
+        1:  214:    TEST_ASSERT_EQUAL_STRING("Hello", textbox.text);
+        1:  215:    TEST_ASSERT_EQUAL_INT(5, textbox.cursor_position);
+        1:  216:}
+        -:  217:
+        1:  218:void test_clay_textbox_no_focus(void) {
+        1:  219:    Clay_TextBox textbox = {0};
+        1:  220:    textbox.has_focus = false;
+        1:  221:    textbox.max_length = 256;
+        1:  222:    strcpy(textbox.text, "Hello");
+        1:  223:    textbox.cursor_position = 5;
+        -:  224:    
+       1*:  225:    TEST_ASSERT_FALSE(clay_textbox_handle_input(&textbox, '!'));
+        1:  226:    TEST_ASSERT_EQUAL_STRING("Hello", textbox.text);
+        1:  227:    TEST_ASSERT_EQUAL_INT(5, textbox.cursor_position);
+        1:  228:}
+        -:  229:
+        1:  230:void test_clay_textbox_special_characters(void) {
+        1:  231:    Clay_TextBox textbox = {0};
+        1:  232:    textbox.has_focus = true;
+        1:  233:    textbox.max_length = 256;
+        1:  234:    strcpy(textbox.text, "");
+        1:  235:    textbox.cursor_position = 0;
+        -:  236:    
+        -:  237:    /* Test printable special characters */
+       1*:  238:    TEST_ASSERT_TRUE(clay_textbox_handle_input(&textbox, '@'));
+       1*:  239:    TEST_ASSERT_TRUE(clay_textbox_handle_input(&textbox, '#'));
+       1*:  240:    TEST_ASSERT_TRUE(clay_textbox_handle_input(&textbox, '$'));
+        -:  241:    
+        1:  242:    TEST_ASSERT_EQUAL_STRING("@#$", textbox.text);
+        1:  243:    TEST_ASSERT_EQUAL_INT(3, textbox.cursor_position);
+        -:  244:    
+        -:  245:    /* Test non-printable characters (should be ignored) */
+       1*:  246:    TEST_ASSERT_FALSE(clay_textbox_handle_input(&textbox, '\n'));
+       1*:  247:    TEST_ASSERT_FALSE(clay_textbox_handle_input(&textbox, '\t'));
+       1*:  248:    TEST_ASSERT_FALSE(clay_textbox_handle_input(&textbox, 1)); /* Control character */
+        -:  249:    
+        1:  250:    TEST_ASSERT_EQUAL_STRING("@#$", textbox.text);
+        1:  251:    TEST_ASSERT_EQUAL_INT(3, textbox.cursor_position);
+        1:  252:}
+        -:  253:
+        1:  254:void test_clay_button_click_inside(void) {
+        1:  255:    Clay_Button button = {0};
+        1:  256:    button.bounding_box = (Clay_BoundingBox){50, 50, 100, 30};
+        1:  257:    Clay_Vector2 click_pos = {75, 60};
+        -:  258:    
+       1*:  259:    TEST_ASSERT_TRUE(clay_button_handle_click(&button, click_pos));
+       1*:  260:    TEST_ASSERT_TRUE(button.is_clicked);
+        1:  261:}
+        -:  262:
+        1:  263:void test_clay_button_click_outside(void) {
+        1:  264:    Clay_Button button = {0};
+        1:  265:    button.bounding_box = (Clay_BoundingBox){50, 50, 100, 30};
+        1:  266:    Clay_Vector2 click_pos = {40, 60};
+        -:  267:    
+       1*:  268:    TEST_ASSERT_FALSE(clay_button_handle_click(&button, click_pos));
+       1*:  269:    TEST_ASSERT_FALSE(button.is_clicked);
+        1:  270:}
+        -:  271:
+        1:  272:void test_clay_button_hover_detection(void) {
+        1:  273:    Clay_Button button = {0};
+        1:  274:    button.bounding_box = (Clay_BoundingBox){50, 50, 100, 30};
+        1:  275:    Clay_Vector2 mouse_inside = {75, 60};
+        1:  276:    Clay_Vector2 mouse_outside = {40, 60};
+        -:  277:    
+        -:  278:    /* Test hover inside */
+        1:  279:    clay_button_update_hover(&button, mouse_inside);
+       1*:  280:    TEST_ASSERT_TRUE(button.is_hovered);
+        -:  281:    
+        -:  282:    /* Test hover outside */
+        1:  283:    clay_button_update_hover(&button, mouse_outside);
+       1*:  284:    TEST_ASSERT_FALSE(button.is_hovered);
+        1:  285:}
+        -:  286:
+        1:  287:void test_clay_layout_overlap_detection(void) {
+        1:  288:    Clay_BoundingBox box1 = {10, 10, 50, 50};
+        1:  289:    Clay_BoundingBox box2 = {40, 40, 50, 50}; /* Overlaps */
+        1:  290:    Clay_BoundingBox box3 = {70, 70, 50, 50}; /* No overlap */
+        -:  291:    
+       1*:  292:    TEST_ASSERT_TRUE(clay_layout_elements_overlap(box1, box2));
+       1*:  293:    TEST_ASSERT_FALSE(clay_layout_elements_overlap(box1, box3));
+        1:  294:}
+        -:  295:
+        1:  296:void test_clay_layout_no_overlap_edge_case(void) {
+        1:  297:    Clay_BoundingBox box1 = {10, 10, 50, 50}; /* Ends at 60, 60 */
+        1:  298:    Clay_BoundingBox box2 = {60, 60, 50, 50}; /* Starts at 60, 60 */
+        -:  299:    
+        -:  300:    /* Touching edges should not be considered overlap */
+       1*:  301:    TEST_ASSERT_FALSE(clay_layout_elements_overlap(box1, box2));
+        1:  302:}
+        -:  303:
+        1:  304:void test_clay_layout_total_width_calculation(void) {
+        1:  305:    Clay_BoundingBox elements[3] = {
+        -:  306:        {10, 10, 50, 30},  /* Ends at x=60 */
+        -:  307:        {70, 10, 40, 30},  /* Ends at x=110 */
+        -:  308:        {20, 50, 30, 30}   /* Ends at x=50 */
+        -:  309:    };
+        -:  310:    
+        1:  311:    float total_width = clay_layout_calculate_total_width(elements, 3);
+        1:  312:    TEST_ASSERT_EQUAL_FLOAT(110.0f, total_width);
+        1:  313:}
+        -:  314:
+        1:  315:void test_clay_textbox_focus_management(void) {
+        1:  316:    Clay_TextBox textbox1 = {0};
+        1:  317:    Clay_TextBox textbox2 = {0};
+        -:  318:    
+        -:  319:    /* Test setting focus */
+        1:  320:    clay_textbox_set_focus(&textbox1, true);
+       1*:  321:    TEST_ASSERT_TRUE(textbox1.has_focus);
+        -:  322:    
+        -:  323:    /* Test removing focus */
+        1:  324:    clay_textbox_set_focus(&textbox1, false);
+       1*:  325:    TEST_ASSERT_FALSE(textbox1.has_focus);
+        -:  326:    
+        -:  327:    /* Test multiple textboxes focus management */
+        1:  328:    clay_textbox_set_focus(&textbox1, true);
+        1:  329:    clay_textbox_set_focus(&textbox2, true);
+        -:  330:    
+        -:  331:    /* Both can have focus simultaneously (application logic should handle exclusivity) */
+       1*:  332:    TEST_ASSERT_TRUE(textbox1.has_focus);
+       1*:  333:    TEST_ASSERT_TRUE(textbox2.has_focus);
+        1:  334:}
+        -:  335:
+        1:  336:void test_clay_ui_component_null_safety(void) {
+        1:  337:    Clay_Vector2 point = {50, 50};
+        -:  338:    
+        -:  339:    /* Test null safety for all functions */
+       1*:  340:    TEST_ASSERT_FALSE(clay_textbox_handle_input(NULL, 'a'));
+       1*:  341:    TEST_ASSERT_FALSE(clay_button_handle_click(NULL, point));
+        -:  342:    
+        -:  343:    /* These should not crash */
+        1:  344:    clay_textbox_set_focus(NULL, true);
+        1:  345:    clay_button_update_hover(NULL, point);
+        1:  346:}
+        -:  347:
+        1:  348:void test_clay_complex_textbox_scenario(void) {
+        1:  349:    Clay_TextBox textbox = {0};
+        1:  350:    textbox.has_focus = true;
+        1:  351:    textbox.max_length = 20;
+        1:  352:    strcpy(textbox.text, "Test");
+        1:  353:    textbox.cursor_position = 4;
+        -:  354:    
+        -:  355:    /* Add " Message" */
+        1:  356:    clay_textbox_handle_input(&textbox, ' ');
+        1:  357:    clay_textbox_handle_input(&textbox, 'M');
+        1:  358:    clay_textbox_handle_input(&textbox, 'e');
+        1:  359:    clay_textbox_handle_input(&textbox, 's');
+        1:  360:    clay_textbox_handle_input(&textbox, 's');
+        1:  361:    clay_textbox_handle_input(&textbox, 'a');
+        1:  362:    clay_textbox_handle_input(&textbox, 'g');
+        1:  363:    clay_textbox_handle_input(&textbox, 'e');
+        -:  364:    
+        1:  365:    TEST_ASSERT_EQUAL_STRING("Test Message", textbox.text);
+        1:  366:    TEST_ASSERT_EQUAL_INT(12, textbox.cursor_position);
+        -:  367:    
+        -:  368:    /* Move cursor to middle and insert text */
+        1:  369:    textbox.cursor_position = 4;
+        1:  370:    clay_textbox_handle_input(&textbox, 'i');
+        1:  371:    clay_textbox_handle_input(&textbox, 'n');
+        1:  372:    clay_textbox_handle_input(&textbox, 'g');
+        -:  373:    
+        1:  374:    TEST_ASSERT_EQUAL_STRING("Testing Message", textbox.text);
+        1:  375:    TEST_ASSERT_EQUAL_INT(7, textbox.cursor_position);
+        -:  376:    
+        -:  377:    /* Delete some characters */
+        1:  378:    clay_textbox_handle_input(&textbox, '\b');
+        1:  379:    clay_textbox_handle_input(&textbox, '\b');
+        -:  380:    
+        1:  381:    TEST_ASSERT_EQUAL_STRING("Testi Message", textbox.text);
+        1:  382:    TEST_ASSERT_EQUAL_INT(5, textbox.cursor_position);
+        1:  383:}
+        -:  384:
+        1:  385:int main(void) {
+        1:  386:    UNITY_BEGIN();
+        -:  387:    
+        -:  388:    /* Point in bounds tests */
+        1:  389:    RUN_TEST(test_clay_point_in_bounds_inside);
+        1:  390:    RUN_TEST(test_clay_point_in_bounds_outside);
+        1:  391:    RUN_TEST(test_clay_point_in_bounds_on_edge);
+        -:  392:    
+        -:  393:    /* Textbox input tests */
+        1:  394:    RUN_TEST(test_clay_textbox_input_normal_character);
+        1:  395:    RUN_TEST(test_clay_textbox_input_insertion);
+        1:  396:    RUN_TEST(test_clay_textbox_backspace_middle);
+        1:  397:    RUN_TEST(test_clay_textbox_backspace_at_start);
+        1:  398:    RUN_TEST(test_clay_textbox_max_length_limit);
+        1:  399:    RUN_TEST(test_clay_textbox_no_focus);
+        1:  400:    RUN_TEST(test_clay_textbox_special_characters);
+        -:  401:    
+        -:  402:    /* Button interaction tests */
+        1:  403:    RUN_TEST(test_clay_button_click_inside);
+        1:  404:    RUN_TEST(test_clay_button_click_outside);
+        1:  405:    RUN_TEST(test_clay_button_hover_detection);
+        -:  406:    
+        -:  407:    /* Layout tests */
+        1:  408:    RUN_TEST(test_clay_layout_overlap_detection);
+        1:  409:    RUN_TEST(test_clay_layout_no_overlap_edge_case);
+        1:  410:    RUN_TEST(test_clay_layout_total_width_calculation);
+        -:  411:    
+        -:  412:    /* Focus management tests */
+        1:  413:    RUN_TEST(test_clay_textbox_focus_management);
+        -:  414:    
+        -:  415:    /* Error handling tests */
+        1:  416:    RUN_TEST(test_clay_ui_component_null_safety);
+        -:  417:    
+        -:  418:    /* Complex scenario tests */
+        1:  419:    RUN_TEST(test_clay_complex_textbox_scenario);
+        -:  420:    
+        1:  421:    return UNITY_END();
+        -:  422:}

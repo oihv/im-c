@@ -1,0 +1,25 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 9  of event 'cycles:Pu'
+# Event count (approx.): 772393
+#
+# Overhead  Command          Shared Object         Symbol                
+# ........  ...............  ....................  ......................
+#
+    62.39%  test_message_ty  ld-linux-x86-64.so.2  [.] 0x000000000000acf1
+    30.45%  test_message_ty  ld-linux-x86-64.so.2  [.] 0x000000000001c3bd
+     6.52%  test_message_ty  [unknown]             [k] 0xffffffffaa04cea2
+     0.60%  test_message_ty  [unknown]             [k] 0xffffffffaa0f1c5f
+     0.04%  test_message_ty  [unknown]             [k] 0xffffffffaa0f1cd4
+     0.00%  test_message_ty  ld-linux-x86-64.so.2  [.] 0x000000000001f7eb
+     0.00%  test_message_ty  [unknown]             [k] 0xffffffffa938bcb7
+     0.00%  test_message_ty  [unknown]             [k] 0xffffffffaa201280
+     0.00%  test_message_ty  [unknown]             [k] 0xffffffffaa304104
+
+
+#
+# (Tip: Use parent filter to see specific call path: perf report -p <regex>)
+#

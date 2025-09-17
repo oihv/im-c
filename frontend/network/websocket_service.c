@@ -152,6 +152,12 @@ static const struct lws_protocols protocols[] = {
 
 bool websocket_service_init(void) {
   lwsl_debug("websocket_service_init called.\n");
+  
+  // If already initialized, cleanup first to prevent leaks
+  if (ws_context || ws_data.messages) {
+    websocket_service_cleanup();
+  }
+  
   struct lws_context_creation_info info = {0};
 
   info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
@@ -234,13 +240,25 @@ void websocket_service_send_text(const char* username, const char* text) {
 }
 
 void websocket_service_cleanup(void) {
+  // Clean up connection state
+  memset(&ws_connection, 0, sizeof(ws_connection));
+  
+  // Clean up message list
   if (ws_data.messages) {
     message_list_destroy(ws_data.messages);
     ws_data.messages = NULL;
   }
   
+  // Clean up websocket context
   if (ws_context) {
     lws_context_destroy(ws_context);
     ws_context = NULL;
   }
+  
+  // Reset websocket data
+  memset(&ws_data, 0, sizeof(ws_data));
+}
+
+bool websocket_should_close(void) {
+  return ws_data.error || !ws_data.connected;
 }

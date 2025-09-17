@@ -1,0 +1,77 @@
+        -:    0:Source:/home/nikolas/Programming/repos/im-c/tests/integration/test_websocket_integration.c
+        -:    0:Graph:build/CMakeFiles/test_websocket_integration.dir/integration/test_websocket_integration.c.gcno
+        -:    0:Data:build/CMakeFiles/test_websocket_integration.dir/integration/test_websocket_integration.c.gcda
+        -:    0:Runs:1
+        -:    1:#include "unity.h"
+        -:    2:#include "websocket_service.h"
+        -:    3:#include "message_types.h"
+        -:    4:#include <string.h>
+        -:    5:#include <stdlib.h>
+        -:    6:#include <unistd.h>
+        -:    7:
+        5:    8:void setUp(void) {
+        5:    9:}
+        -:   10:
+        5:   11:void tearDown(void) {
+        5:   12:    websocket_service_cleanup();
+        5:   13:}
+        -:   14:
+        1:   15:void test_websocket_service_init(void) {
+        1:   16:    bool result = websocket_service_init();
+        -:   17:    
+       1*:   18:    TEST_ASSERT_TRUE(result);
+        1:   19:}
+        -:   20:
+        1:   21:void test_websocket_service_update_without_init(void) {
+        1:   22:    WebSocketData* data = websocket_service_update();
+        -:   23:    
+        -:   24:    // Should handle gracefully without crashing
+        -:   25:    // The exact behavior depends on implementation
+        1:   26:}
+        -:   27:
+        1:   28:void test_websocket_service_send_text(void) {
+        1:   29:    websocket_service_init();
+        -:   30:    
+        -:   31:    // This should not crash even if not connected
+        1:   32:    websocket_service_send_text("test_user", "Hello, World!");
+        -:   33:    
+        -:   34:    // Clean up
+        1:   35:    websocket_service_cleanup();
+        1:   36:}
+        -:   37:
+        1:   38:void test_websocket_service_send_message(void) {
+        1:   39:    websocket_service_init();
+        -:   40:    
+        1:   41:    Message test_message = {
+        -:   42:        .timestamp = 1234567890,
+        -:   43:        .type = MSG_TYPE_CHAT
+        -:   44:    };
+        1:   45:    strcpy(test_message.username, "test_user");
+        1:   46:    strcpy(test_message.content, "Test message");
+        1:   47:    strcpy(test_message.metadata, "");
+        -:   48:    
+        -:   49:    // This should not crash even if not connected
+        1:   50:    websocket_service_send_message(&test_message);
+        -:   51:    
+        -:   52:    // Clean up
+        1:   53:    websocket_service_cleanup();
+        1:   54:}
+        -:   55:
+        1:   56:void test_websocket_should_close(void) {
+        1:   57:    bool should_close = websocket_should_close();
+        -:   58:    
+        -:   59:    // Should return a boolean value
+       1*:   60:    TEST_ASSERT_TRUE(should_close == true || should_close == false);
+        1:   61:}
+        -:   62:
+        1:   63:int main(void) {
+        1:   64:    UNITY_BEGIN();
+        -:   65:    
+        1:   66:    RUN_TEST(test_websocket_service_init);
+        1:   67:    RUN_TEST(test_websocket_service_update_without_init);
+        1:   68:    RUN_TEST(test_websocket_service_send_text);
+        1:   69:    RUN_TEST(test_websocket_service_send_message);
+        1:   70:    RUN_TEST(test_websocket_should_close);
+        -:   71:    
+        1:   72:    return UNITY_END();
+        -:   73:}

@@ -47,8 +47,7 @@ int main(void) {
   uint16_t frameCounts = 0; // For button testing
 
   // Enable debugger
-  Clay_SetDebugModeEnabled(true);
-  char buffer[MAX_INPUT_CHAR + 1] = "\0";
+  // Clay_SetDebugModeEnabled(true);
 
   if (!websocket_service_init()) {
     lwsl_err("Failed to initialize websocket connection!");
@@ -105,7 +104,6 @@ int main(void) {
     Clay_RenderCommandArray renderCommands;
     if (!loginData.loggedIn) {
       renderCommands = LoginPage_CreateLayout(&loginData);
-      // renderCommands = DebugPage_CreateLayout(buffer, &frameCounts);
     } else {
       renderCommands = ChatApp_CreateLayout(&data);
     }

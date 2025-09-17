@@ -1,0 +1,529 @@
+        -:    0:Source:/home/nikolas/Programming/repos/im-c/tests/edge_cases/test_error_handling.c
+        -:    0:Graph:build/CMakeFiles/test_error_handling.dir/edge_cases/test_error_handling.c.gcno
+        -:    0:Data:build/CMakeFiles/test_error_handling.dir/edge_cases/test_error_handling.c.gcda
+        -:    0:Runs:2
+        -:    1:#include "unity.h"
+        -:    2:#include <stdlib.h>
+        -:    3:#include <string.h>
+        -:    4:#include <stdio.h>
+        -:    5:#include <limits.h>
+        -:    6:#include <stdint.h>
+        -:    7:#include <ctype.h>
+        -:    8:
+        -:    9:/* Simple double-free protection for testing */
+        -:   10:#define MAX_FREED_PTRS 100
+        -:   11:static void* freed_ptrs[MAX_FREED_PTRS];
+        -:   12:static int freed_count = 0;
+        -:   13:
+       10:   14:static int is_already_freed(void* ptr) {
+       12:   15:    for (int i = 0; i < freed_count; i++) {
+        4:   16:        if (freed_ptrs[i] == ptr) {
+        2:   17:            return 1;
+        -:   18:        }
+        -:   19:    }
+        8:   20:    return 0;
+        -:   21:}
+        -:   22:
+        8:   23:static void mark_as_freed(void* ptr) {
+        8:   24:    if (freed_count < MAX_FREED_PTRS) {
+        8:   25:        freed_ptrs[freed_count++] = ptr;
+        -:   26:    }
+        8:   27:}
+        -:   28:
+        -:   29:/* Mock message structures for testing */
+        -:   30:#define MAX_MESSAGE_LENGTH 1024
+        -:   31:#define MAX_USERNAME_LENGTH 64
+        -:   32:
+        -:   33:typedef enum {
+        -:   34:    MSG_TYPE_CHAT = 0,
+        -:   35:    MSG_TYPE_JOIN = 1,
+        -:   36:    MSG_TYPE_LEAVE = 2,
+        -:   37:    MSG_TYPE_STATUS = 3,
+        -:   38:    MSG_TYPE_ERROR = 4,
+        -:   39:    MSG_TYPE_INVALID = 999
+        -:   40:} MessageType;
+        -:   41:
+        -:   42:typedef struct {
+        -:   43:    uint64_t magic; /* Magic number to detect freed messages */
+        -:   44:    uint64_t timestamp;
+        -:   45:    MessageType type;
+        -:   46:    char username[MAX_USERNAME_LENGTH];
+        -:   47:    char content[MAX_MESSAGE_LENGTH];
+        -:   48:    char metadata[256];
+        -:   49:} Message;
+        -:   50:
+        -:   51:#define MESSAGE_MAGIC 0xDEADBEEFCAFEBABE
+        -:   52:#define MESSAGE_FREED_MAGIC 0xFEEDFACEDEADDEAD
+        -:   53:
+        -:   54:/* Error handling test functions */
+       32:   55:int safe_string_copy(char *dest, const char *src, size_t dest_size) {
+       32:   56:    if (!dest || !src || dest_size == 0) {
+        6:   57:        return -1; /* Invalid parameters */
+        -:   58:    }
+        -:   59:    
+       26:   60:    if (dest_size == 1) {
+        2:   61:        dest[0] = '\0';
+        2:   62:        return 0; /* Only room for null terminator */
+        -:   63:    }
+        -:   64:    
+       24:   65:    strncpy(dest, src, dest_size - 1);
+       24:   66:    dest[dest_size - 1] = '\0';
+        -:   67:    
+       24:   68:    return strlen(dest);
+        -:   69:}
+        -:   70:
+       14:   71:int safe_string_append(char *dest, const char *src, size_t dest_size) {
+        -:   72:    size_t dest_len, src_len, available;
+        -:   73:    
+       14:   74:    if (!dest || !src || dest_size == 0) {
+        6:   75:        return -1;
+        -:   76:    }
+        -:   77:    
+        8:   78:    dest_len = strlen(dest);
+        8:   79:    src_len = strlen(src);
+        -:   80:    
+        8:   81:    if (dest_len >= dest_size) {
+    #####:   82:        return -1; /* Destination already overflows */
+        -:   83:    }
+        -:   84:    
+        8:   85:    available = dest_size - dest_len - 1; /* Reserve space for null terminator */
+        -:   86:    
+        8:   87:    if (available == 0) {
+        2:   88:        return 0; /* No space available */
+        -:   89:    }
+        -:   90:    
+        6:   91:    if (src_len <= available) {
+        4:   92:        strcat(dest, src);
+        4:   93:        return dest_len + src_len;
+        -:   94:    } else {
+        2:   95:        strncat(dest, src, available);
+        2:   96:        return dest_len + available;
+        -:   97:    }
+        -:   98:}
+        -:   99:
+       16:  100:Message* safe_message_create(const char *username, const char *content, MessageType type) {
+        -:  101:    Message *msg;
+        -:  102:    
+       16:  103:    if (!username || !content) {
+        4:  104:        return NULL;
+        -:  105:    }
+        -:  106:    
+       12:  107:    if (strlen(username) >= MAX_USERNAME_LENGTH || strlen(content) >= MAX_MESSAGE_LENGTH) {
+        4:  108:        return NULL; /* Input too long */
+        -:  109:    }
+        -:  110:    
+        8:  111:    msg = malloc(sizeof(Message));
+        8:  112:    if (!msg) {
+    #####:  113:        return NULL; /* Memory allocation failed */
+        -:  114:    }
+        -:  115:    
+        8:  116:    memset(msg, 0, sizeof(Message));
+        -:  117:    
+        8:  118:    msg->magic = MESSAGE_MAGIC;
+        8:  119:    safe_string_copy(msg->username, username, MAX_USERNAME_LENGTH);
+        8:  120:    safe_string_copy(msg->content, content, MAX_MESSAGE_LENGTH);
+        8:  121:    msg->type = type;
+        8:  122:    msg->timestamp = 1234567890; /* Mock timestamp */
+        -:  123:    
+        8:  124:    return msg;
+        -:  125:}
+        -:  126:
+       12:  127:void safe_message_destroy(Message *msg) {
+       12:  128:    if (!msg) return;
+        -:  129:    
+        -:  130:    /* Check if already freed using our registry */
+       10:  131:    if (is_already_freed(msg)) {
+        2:  132:        return; /* Already freed, ignore */
+        -:  133:    }
+        -:  134:    
+        -:  135:    /* Mark as freed before calling free() */
+        8:  136:    mark_as_freed(msg);
+        8:  137:    free(msg);
+        -:  138:}
+        -:  139:
+       16:  140:int validate_message_type(MessageType type) {
+       16:  141:    switch (type) {
+       10:  142:        case MSG_TYPE_CHAT:
+        -:  143:        case MSG_TYPE_JOIN:
+        -:  144:        case MSG_TYPE_LEAVE:
+        -:  145:        case MSG_TYPE_STATUS:
+        -:  146:        case MSG_TYPE_ERROR:
+       10:  147:            return 1; /* Valid */
+        6:  148:        default:
+        6:  149:            return 0; /* Invalid */
+        -:  150:    }
+        -:  151:}
+        -:  152:
+       24:  153:int validate_username(const char *username) {
+        -:  154:    size_t len;
+        -:  155:    size_t i;
+        -:  156:    
+       24:  157:    if (!username) return 0;
+        -:  158:    
+       22:  159:    len = strlen(username);
+       22:  160:    if (len == 0 || len >= MAX_USERNAME_LENGTH) return 0;
+        -:  161:    
+        -:  162:    /* Check for valid characters (alphanumeric, underscore, dash) */
+      114:  163:    for (i = 0; i < len; i++) {
+      104:  164:        char c = username[i];
+      104:  165:        if (!(c >= 'a' && c <= 'z') && 
+       30:  166:            !(c >= 'A' && c <= 'Z') && 
+       24:  167:            !(c >= '0' && c <= '9') && 
+       10:  168:            c != '_' && c != '-') {
+        8:  169:            return 0;
+        -:  170:        }
+        -:  171:    }
+        -:  172:    
+       10:  173:    return 1;
+        -:  174:}
+        -:  175:
+       20:  176:int safe_parse_integer(const char *str, int *result) {
+        -:  177:    char *endptr;
+        -:  178:    long val;
+        -:  179:    
+       20:  180:    if (!str || !result) return 0;
+        -:  181:    
+        -:  182:    /* Check for leading whitespace */
+       18:  183:    if (isspace(*str)) {
+        2:  184:        return 0;
+        -:  185:    }
+        -:  186:    
+       16:  187:    val = strtol(str, &endptr, 10);
+        -:  188:    
+        -:  189:    /* Check for conversion errors */
+       16:  190:    if (endptr == str || *endptr != '\0') {
+        6:  191:        return 0; /* No digits found or extra characters */
+        -:  192:    }
+        -:  193:    
+        -:  194:    /* Check for overflow */
+       10:  195:    if (val > INT_MAX || val < INT_MIN) {
+        4:  196:        return 0;
+        -:  197:    }
+        -:  198:    
+        6:  199:    *result = (int)val;
+        6:  200:    return 1;
+        -:  201:}
+        -:  202:
+        -:  203:/* Network error simulation */
+        -:  204:typedef enum {
+        -:  205:    NET_ERROR_NONE = 0,
+        -:  206:    NET_ERROR_CONNECTION_LOST = 1,
+        -:  207:    NET_ERROR_TIMEOUT = 2,
+        -:  208:    NET_ERROR_MALFORMED_DATA = 3,
+        -:  209:    NET_ERROR_BUFFER_OVERFLOW = 4,
+        -:  210:    NET_ERROR_AUTHENTICATION_FAILED = 5
+        -:  211:} NetworkError;
+        -:  212:
+        8:  213:const char* network_error_to_string(NetworkError error) {
+        8:  214:    switch (error) {
+        2:  215:        case NET_ERROR_NONE: return "No error";
+        2:  216:        case NET_ERROR_CONNECTION_LOST: return "Connection lost";
+        2:  217:        case NET_ERROR_TIMEOUT: return "Timeout";
+    #####:  218:        case NET_ERROR_MALFORMED_DATA: return "Malformed data";
+    #####:  219:        case NET_ERROR_BUFFER_OVERFLOW: return "Buffer overflow";
+    #####:  220:        case NET_ERROR_AUTHENTICATION_FAILED: return "Authentication failed";
+        2:  221:        default: return "Unknown error";
+        -:  222:    }
+        -:  223:}
+        -:  224:
+        -:  225:/* Test cases */
+       52:  226:void setUp(void) {
+        -:  227:    /* Reset freed pointers registry before each test */
+       52:  228:    freed_count = 0;
+       52:  229:    memset(freed_ptrs, 0, sizeof(freed_ptrs));
+       52:  230:}
+        -:  231:
+       52:  232:void tearDown(void) {
+        -:  233:    /* Cleanup after each test */
+       52:  234:}
+        -:  235:
+        2:  236:void test_safe_string_copy_normal(void) {
+        -:  237:    char buffer[64];
+        2:  238:    int result = safe_string_copy(buffer, "Hello World", sizeof(buffer));
+        -:  239:    
+        2:  240:    TEST_ASSERT_EQUAL_STRING("Hello World", buffer);
+        2:  241:    TEST_ASSERT_EQUAL_INT(11, result);
+        2:  242:}
+        -:  243:
+        2:  244:void test_safe_string_copy_null_dest(void) {
+        2:  245:    int result = safe_string_copy(NULL, "Hello", 10);
+        2:  246:    TEST_ASSERT_EQUAL_INT(-1, result);
+        2:  247:}
+        -:  248:
+        2:  249:void test_safe_string_copy_null_src(void) {
+        -:  250:    char buffer[64];
+        2:  251:    int result = safe_string_copy(buffer, NULL, sizeof(buffer));
+        2:  252:    TEST_ASSERT_EQUAL_INT(-1, result);
+        2:  253:}
+        -:  254:
+        2:  255:void test_safe_string_copy_zero_size(void) {
+        -:  256:    char buffer[64];
+        2:  257:    int result = safe_string_copy(buffer, "Hello", 0);
+        2:  258:    TEST_ASSERT_EQUAL_INT(-1, result);
+        2:  259:}
+        -:  260:
+        2:  261:void test_safe_string_copy_size_one(void) {
+        -:  262:    char buffer[64];
+        2:  263:    int result = safe_string_copy(buffer, "Hello", 1);
+        2:  264:    TEST_ASSERT_EQUAL_INT(0, result);
+        2:  265:    TEST_ASSERT_EQUAL_STRING("", buffer);
+        2:  266:}
+        -:  267:
+        2:  268:void test_safe_string_copy_truncation(void) {
+        -:  269:    char buffer[6];
+        2:  270:    int result = safe_string_copy(buffer, "Hello World", sizeof(buffer));
+        2:  271:    TEST_ASSERT_EQUAL_STRING("Hello", buffer);
+        2:  272:    TEST_ASSERT_EQUAL_INT(5, result);
+        2:  273:}
+        -:  274:
+        2:  275:void test_safe_string_append_normal(void) {
+        2:  276:    char buffer[64] = "Hello";
+        2:  277:    int result = safe_string_append(buffer, " World", sizeof(buffer));
+        -:  278:    
+        2:  279:    TEST_ASSERT_EQUAL_STRING("Hello World", buffer);
+        2:  280:    TEST_ASSERT_EQUAL_INT(11, result);
+        2:  281:}
+        -:  282:
+        2:  283:void test_safe_string_append_null_params(void) {
+        2:  284:    char buffer[64] = "Hello";
+        -:  285:    
+        2:  286:    TEST_ASSERT_EQUAL_INT(-1, safe_string_append(NULL, " World", 64));
+        2:  287:    TEST_ASSERT_EQUAL_INT(-1, safe_string_append(buffer, NULL, 64));
+        2:  288:    TEST_ASSERT_EQUAL_INT(-1, safe_string_append(buffer, " World", 0));
+        2:  289:}
+        -:  290:
+        2:  291:void test_safe_string_append_no_space(void) {
+        2:  292:    char buffer[6] = "Hello";
+        2:  293:    int result = safe_string_append(buffer, " World", sizeof(buffer));
+        -:  294:    
+        2:  295:    TEST_ASSERT_EQUAL_STRING("Hello", buffer);
+        2:  296:    TEST_ASSERT_EQUAL_INT(0, result);
+        2:  297:}
+        -:  298:
+        2:  299:void test_safe_string_append_partial_append(void) {
+        2:  300:    char buffer[10] = "Hello";
+        2:  301:    int result = safe_string_append(buffer, " World!", sizeof(buffer));
+        -:  302:    
+        2:  303:    TEST_ASSERT_EQUAL_STRING("Hello Wor", buffer);
+        2:  304:    TEST_ASSERT_EQUAL_INT(9, result);
+        2:  305:}
+        -:  306:
+        2:  307:void test_safe_message_create_valid(void) {
+        2:  308:    Message *msg = safe_message_create("testuser", "Hello World", MSG_TYPE_CHAT);
+        -:  309:    
+       2*:  310:    TEST_ASSERT_NOT_NULL(msg);
+        2:  311:    TEST_ASSERT_EQUAL_STRING("testuser", msg->username);
+        2:  312:    TEST_ASSERT_EQUAL_STRING("Hello World", msg->content);
+        2:  313:    TEST_ASSERT_EQUAL_INT(MSG_TYPE_CHAT, msg->type);
+       2*:  314:    TEST_ASSERT_NOT_EQUAL(0, msg->timestamp);
+        -:  315:    
+        2:  316:    safe_message_destroy(msg);
+        2:  317:}
+        -:  318:
+        2:  319:void test_safe_message_create_null_params(void) {
+        2:  320:    Message *msg1 = safe_message_create(NULL, "content", MSG_TYPE_CHAT);
+        2:  321:    Message *msg2 = safe_message_create("user", NULL, MSG_TYPE_CHAT);
+        -:  322:    
+       2*:  323:    TEST_ASSERT_NULL(msg1);
+       2*:  324:    TEST_ASSERT_NULL(msg2);
+        2:  325:}
+        -:  326:
+        2:  327:void test_safe_message_create_oversized_input(void) {
+        -:  328:    char long_username[MAX_USERNAME_LENGTH + 10];
+        -:  329:    char long_content[MAX_MESSAGE_LENGTH + 10];
+        -:  330:    Message *msg1, *msg2;
+        -:  331:    
+        2:  332:    memset(long_username, 'a', sizeof(long_username) - 1);
+        2:  333:    long_username[sizeof(long_username) - 1] = '\0';
+        -:  334:    
+        2:  335:    memset(long_content, 'b', sizeof(long_content) - 1);
+        2:  336:    long_content[sizeof(long_content) - 1] = '\0';
+        -:  337:    
+        2:  338:    msg1 = safe_message_create(long_username, "content", MSG_TYPE_CHAT);
+        2:  339:    msg2 = safe_message_create("user", long_content, MSG_TYPE_CHAT);
+        -:  340:    
+       2*:  341:    TEST_ASSERT_NULL(msg1);
+       2*:  342:    TEST_ASSERT_NULL(msg2);
+        2:  343:}
+        -:  344:
+        2:  345:void test_validate_message_type_valid(void) {
+       2*:  346:    TEST_ASSERT_TRUE(validate_message_type(MSG_TYPE_CHAT));
+       2*:  347:    TEST_ASSERT_TRUE(validate_message_type(MSG_TYPE_JOIN));
+       2*:  348:    TEST_ASSERT_TRUE(validate_message_type(MSG_TYPE_LEAVE));
+       2*:  349:    TEST_ASSERT_TRUE(validate_message_type(MSG_TYPE_STATUS));
+       2*:  350:    TEST_ASSERT_TRUE(validate_message_type(MSG_TYPE_ERROR));
+        2:  351:}
+        -:  352:
+        2:  353:void test_validate_message_type_invalid(void) {
+       2*:  354:    TEST_ASSERT_FALSE(validate_message_type(MSG_TYPE_INVALID));
+       2*:  355:    TEST_ASSERT_FALSE(validate_message_type((MessageType)100));
+       2*:  356:    TEST_ASSERT_FALSE(validate_message_type((MessageType)-1));
+        2:  357:}
+        -:  358:
+        2:  359:void test_validate_username_valid(void) {
+       2*:  360:    TEST_ASSERT_TRUE(validate_username("user123"));
+       2*:  361:    TEST_ASSERT_TRUE(validate_username("test_user"));
+       2*:  362:    TEST_ASSERT_TRUE(validate_username("user-name"));
+       2*:  363:    TEST_ASSERT_TRUE(validate_username("ABC123"));
+       2*:  364:    TEST_ASSERT_TRUE(validate_username("a"));
+        2:  365:}
+        -:  366:
+        2:  367:void test_validate_username_invalid(void) {
+       2*:  368:    TEST_ASSERT_FALSE(validate_username(NULL));
+       2*:  369:    TEST_ASSERT_FALSE(validate_username(""));
+       2*:  370:    TEST_ASSERT_FALSE(validate_username("user@domain"));
+       2*:  371:    TEST_ASSERT_FALSE(validate_username("user name")); /* Space */
+       2*:  372:    TEST_ASSERT_FALSE(validate_username("user.name")); /* Dot */
+       2*:  373:    TEST_ASSERT_FALSE(validate_username("user#name")); /* Hash */
+        2:  374:}
+        -:  375:
+        2:  376:void test_validate_username_too_long(void) {
+        -:  377:    char long_username[MAX_USERNAME_LENGTH + 10];
+        2:  378:    memset(long_username, 'a', sizeof(long_username) - 1);
+        2:  379:    long_username[sizeof(long_username) - 1] = '\0';
+        -:  380:    
+       2*:  381:    TEST_ASSERT_FALSE(validate_username(long_username));
+        2:  382:}
+        -:  383:
+        2:  384:void test_safe_parse_integer_valid(void) {
+        -:  385:    int result;
+        -:  386:    
+       2*:  387:    TEST_ASSERT_TRUE(safe_parse_integer("123", &result));
+        2:  388:    TEST_ASSERT_EQUAL_INT(123, result);
+        -:  389:    
+       2*:  390:    TEST_ASSERT_TRUE(safe_parse_integer("-456", &result));
+        2:  391:    TEST_ASSERT_EQUAL_INT(-456, result);
+        -:  392:    
+       2*:  393:    TEST_ASSERT_TRUE(safe_parse_integer("0", &result));
+        2:  394:    TEST_ASSERT_EQUAL_INT(0, result);
+        2:  395:}
+        -:  396:
+        2:  397:void test_safe_parse_integer_invalid(void) {
+        -:  398:    int result;
+        -:  399:    
+       2*:  400:    TEST_ASSERT_FALSE(safe_parse_integer(NULL, &result));
+       2*:  401:    TEST_ASSERT_FALSE(safe_parse_integer("abc", &result));
+       2*:  402:    TEST_ASSERT_FALSE(safe_parse_integer("123abc", &result));
+       2*:  403:    TEST_ASSERT_FALSE(safe_parse_integer("", &result));
+       2*:  404:    TEST_ASSERT_FALSE(safe_parse_integer("  123", &result)); /* Leading whitespace */
+        2:  405:}
+        -:  406:
+        2:  407:void test_safe_parse_integer_overflow(void) {
+        -:  408:    char overflow_str[32];
+        -:  409:    int result;
+        -:  410:    
+        2:  411:    sprintf(overflow_str, "%lld", (long long)INT_MAX + 1);
+       2*:  412:    TEST_ASSERT_FALSE(safe_parse_integer(overflow_str, &result));
+        -:  413:    
+        2:  414:    sprintf(overflow_str, "%lld", (long long)INT_MIN - 1);
+       2*:  415:    TEST_ASSERT_FALSE(safe_parse_integer(overflow_str, &result));
+        2:  416:}
+        -:  417:
+        2:  418:void test_network_error_string_conversion(void) {
+        2:  419:    TEST_ASSERT_EQUAL_STRING("No error", network_error_to_string(NET_ERROR_NONE));
+        2:  420:    TEST_ASSERT_EQUAL_STRING("Connection lost", network_error_to_string(NET_ERROR_CONNECTION_LOST));
+        2:  421:    TEST_ASSERT_EQUAL_STRING("Timeout", network_error_to_string(NET_ERROR_TIMEOUT));
+        2:  422:    TEST_ASSERT_EQUAL_STRING("Unknown error", network_error_to_string((NetworkError)999));
+        2:  423:}
+        -:  424:
+        2:  425:void test_buffer_overflow_protection(void) {
+        -:  426:    char small_buffer[8];
+        2:  427:    const char *large_input = "This is a very long string that should be truncated";
+        -:  428:    
+        2:  429:    safe_string_copy(small_buffer, large_input, sizeof(small_buffer));
+        -:  430:    
+        -:  431:    /* Verify null termination */
+        2:  432:    TEST_ASSERT_EQUAL_CHAR('\0', small_buffer[sizeof(small_buffer) - 1]);
+        -:  433:    
+        -:  434:    /* Verify no buffer overflow */
+        2:  435:    TEST_ASSERT_EQUAL_STRING("This is", small_buffer);
+        2:  436:}
+        -:  437:
+        2:  438:void test_memory_cleanup_on_error(void) {
+        -:  439:    /* Simulate memory allocation failure scenario */
+        2:  440:    Message *msg = safe_message_create("user", "content", MSG_TYPE_CHAT);
+       2*:  441:    TEST_ASSERT_NOT_NULL(msg);
+        -:  442:    
+        -:  443:    /* Ensure safe cleanup */
+        2:  444:    safe_message_destroy(msg);
+        -:  445:    
+        -:  446:    /* Test double-free safety */
+        2:  447:    safe_message_destroy(msg); /* Should not crash */
+        2:  448:    safe_message_destroy(NULL); /* Should not crash */
+        2:  449:}
+        -:  450:
+        2:  451:void test_edge_case_empty_strings(void) {
+        -:  452:    char buffer[64];
+        -:  453:    int result;
+        -:  454:    
+        2:  455:    result = safe_string_copy(buffer, "", sizeof(buffer));
+        2:  456:    TEST_ASSERT_EQUAL_STRING("", buffer);
+        2:  457:    TEST_ASSERT_EQUAL_INT(0, result);
+        -:  458:    
+        2:  459:    strcpy(buffer, "Hello");
+        2:  460:    result = safe_string_append(buffer, "", sizeof(buffer));
+        2:  461:    TEST_ASSERT_EQUAL_STRING("Hello", buffer);
+        2:  462:    TEST_ASSERT_EQUAL_INT(5, result);
+        2:  463:}
+        -:  464:
+        2:  465:void test_concurrent_access_safety(void) {
+        -:  466:    /* Test basic thread safety considerations */
+        2:  467:    Message *msg1 = safe_message_create("user1", "message1", MSG_TYPE_CHAT);
+        2:  468:    Message *msg2 = safe_message_create("user2", "message2", MSG_TYPE_CHAT);
+        -:  469:    
+       2*:  470:    TEST_ASSERT_NOT_NULL(msg1);
+       2*:  471:    TEST_ASSERT_NOT_NULL(msg2);
+        -:  472:    
+        -:  473:    /* Verify messages are independent */
+       2*:  474:    TEST_ASSERT_NOT_EQUAL(msg1, msg2);
+        2:  475:    TEST_ASSERT_EQUAL_STRING("user1", msg1->username);
+        2:  476:    TEST_ASSERT_EQUAL_STRING("user2", msg2->username);
+        -:  477:    
+        2:  478:    safe_message_destroy(msg1);
+        2:  479:    safe_message_destroy(msg2);
+        2:  480:}
+        -:  481:
+        2:  482:int main(void) {
+        2:  483:    UNITY_BEGIN();
+        -:  484:    
+        -:  485:    /* String handling error tests */
+        2:  486:    RUN_TEST(test_safe_string_copy_normal);
+        2:  487:    RUN_TEST(test_safe_string_copy_null_dest);
+        2:  488:    RUN_TEST(test_safe_string_copy_null_src);
+        2:  489:    RUN_TEST(test_safe_string_copy_zero_size);
+        2:  490:    RUN_TEST(test_safe_string_copy_size_one);
+        2:  491:    RUN_TEST(test_safe_string_copy_truncation);
+        -:  492:    
+        2:  493:    RUN_TEST(test_safe_string_append_normal);
+        2:  494:    RUN_TEST(test_safe_string_append_null_params);
+        2:  495:    RUN_TEST(test_safe_string_append_no_space);
+        2:  496:    RUN_TEST(test_safe_string_append_partial_append);
+        -:  497:    
+        -:  498:    /* Message handling error tests */
+        2:  499:    RUN_TEST(test_safe_message_create_valid);
+        2:  500:    RUN_TEST(test_safe_message_create_null_params);
+        2:  501:    RUN_TEST(test_safe_message_create_oversized_input);
+        -:  502:    
+        -:  503:    /* Input validation tests */
+        2:  504:    RUN_TEST(test_validate_message_type_valid);
+        2:  505:    RUN_TEST(test_validate_message_type_invalid);
+        2:  506:    RUN_TEST(test_validate_username_valid);
+        2:  507:    RUN_TEST(test_validate_username_invalid);
+        2:  508:    RUN_TEST(test_validate_username_too_long);
+        -:  509:    
+        -:  510:    /* Integer parsing tests */
+        2:  511:    RUN_TEST(test_safe_parse_integer_valid);
+        2:  512:    RUN_TEST(test_safe_parse_integer_invalid);
+        2:  513:    RUN_TEST(test_safe_parse_integer_overflow);
+        -:  514:    
+        -:  515:    /* Network error handling tests */
+        2:  516:    RUN_TEST(test_network_error_string_conversion);
+        -:  517:    
+        -:  518:    /* Security and edge case tests */
+        2:  519:    RUN_TEST(test_buffer_overflow_protection);
+        2:  520:    RUN_TEST(test_memory_cleanup_on_error);
+        2:  521:    RUN_TEST(test_edge_case_empty_strings);
+        2:  522:    RUN_TEST(test_concurrent_access_safety);
+        -:  523:    
+        2:  524:    return UNITY_END();
+        -:  525:}

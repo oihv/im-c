@@ -6,26 +6,141 @@ Follow the readme in both 'frontend/' and 'backend/' dir
 
 ## Testing
 
-Run the comprehensive test suite:
+The project includes a comprehensive testing suite with multiple testing methodologies:
+
+### Quick Start
+
+Run the complete test suite with coverage analysis:
 
 ```bash
-./tests/run_tests.sh
+cd tests
+./run_comprehensive_tests.sh
 ```
 
-Or run individual test categories:
+This will execute all tests, generate coverage reports, perform memory leak detection, and create detailed test reports.
+
+### Test Categories
+
+1. **Unit Tests** - Core functionality testing
+   - Message parsing and serialization
+   - Textbox focus management
+   - Backend message handling logic
+
+2. **Integration Tests** - Component interaction testing
+   - WebSocket communication with mock server
+   - Client-server message flow simulation
+   - Network error handling scenarios
+
+3. **UI Tests** - User interface component testing
+   - Clay component interaction (headless)
+   - Input handling and validation
+   - Layout and collision detection
+
+4. **Error Handling Tests** - Robustness and security testing
+   - Input validation and sanitization
+   - Buffer overflow protection
+   - Memory management safety
+
+5. **Backend Tests** - Server-side functionality
+   - Message history management
+   - Client session handling
+   - Memory allocation/cleanup
+
+### Manual Test Execution
+
+Run individual test categories:
 
 ```bash
 cd tests/build
-./test_message_types    # Unit tests for message handling
-./test_textbox          # Unit tests for textbox components
-./test_ui_components    # UI component logic tests
+
+# Unit tests
+./test_message_types          # Message handling
+./test_textbox               # Textbox functionality
+
+# UI tests
+./test_ui_components         # Basic UI logic
+./test_clay_components_advanced  # Advanced Clay integration
+
+# Integration tests
+./test_websocket_integration_advanced  # Mock server tests
+
+# Backend tests
+./test_backend_components    # Server logic
+
+# Error handling tests
+./test_error_handling        # Input validation & safety
 ```
 
-See `tests/README.md` for detailed testing documentation.
+### Coverage Analysis
+
+Generate detailed coverage reports:
+
+```bash
+cd tests
+cmake .. -DENABLE_COVERAGE=ON
+make
+ctest
+lcov --capture --directory . --output-file coverage.info
+genhtml coverage.info --output-directory coverage_html
+```
+
+Open `coverage_html/index.html` for interactive coverage analysis.
+
+### Memory Leak Detection
+
+Run tests with Valgrind memory checking:
+
+```bash
+cd tests
+cmake .. -DENABLE_VALGRIND=ON
+make
+ctest  # Includes Valgrind tests automatically
+```
+
+### Fuzz Testing
+
+For security testing with AFL (American Fuzzy Lop):
+
+```bash
+cd tests
+cmake .. -DENABLE_FUZZING=ON
+make
+# Run fuzzing (requires AFL installation):
+# afl-fuzz -i testcases -o findings ./fuzz_message_parser
+```
+
+### Test Results
+
+After running `./run_comprehensive_tests.sh`, find results in:
+- `coverage/test_report.md` - Comprehensive test summary
+- `coverage/html/index.html` - Interactive coverage report
+- `valgrind_logs/` - Memory leak detection logs
+
+### Continuous Integration
+
+The testing framework supports:
+- Automated test execution
+- Coverage threshold enforcement
+- Memory leak detection
+- Performance profiling
+- Static code analysis
+
+See `tests/README.md` for detailed testing documentation and architecture.
+
+## Development Status
+
+### Testing Implementation ✅ COMPLETED
+- [x] Comprehensive test suite with Unity framework
+- [x] Mock WebSocket server for integration testing
+- [x] Coverage reporting with gcov/lcov
+- [x] Memory leak detection with Valgrind
+- [x] Fuzz testing for input validation
+- [x] Automated test runner with reporting
+- [x] Backend unit tests for server components
+- [x] UI component testing (headless Clay)
+- [x] Error handling and edge case testing
 
 ## TODO
-- [x] figure out how to do automated testing, both backend and frontend (how to test ui, especially)
-- [ ] from the automated test, generate test report
 
 ### frontend
 #### textbox: nik

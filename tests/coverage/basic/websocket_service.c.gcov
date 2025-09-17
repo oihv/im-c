@@ -1,0 +1,268 @@
+        -:    0:Source:/home/nikolas/Programming/repos/im-c/frontend/network/websocket_service.c
+        -:    0:Graph:build/CMakeFiles/test_websocket_integration_advanced.dir/home/nikolas/Programming/repos/im-c/frontend/network/websocket_service.c.gcno
+        -:    0:Data:build/CMakeFiles/test_websocket_integration_advanced.dir/home/nikolas/Programming/repos/im-c/frontend/network/websocket_service.c.gcda
+        -:    0:Runs:1
+        -:    1:#include "websocket_service.h"
+        -:    2:#include "../clay.h"
+        -:    3:#include <libwebsockets.h>
+        -:    4:#include <stdint.h>
+        -:    5:#include <stdio.h>
+        -:    6:#include <string.h>
+        -:    7:#include <sys/time.h>
+        -:    8:
+        -:    9:static struct lws_context *ws_context = NULL;
+        -:   10:
+        -:   11:static WebSocketData ws_data = {0};
+        -:   12:
+        -:   13:my_conn ws_connection = {0};
+        -:   14:
+        -:   15:// Retry policy
+        -:   16:static const uint32_t backoff_ms[] = {1000, 2000, 3000, 4000, 5000};
+        -:   17:static const lws_retry_bo_t retry = {
+        -:   18:    .retry_ms_table = backoff_ms,
+        -:   19:    .retry_ms_table_count = LWS_ARRAY_SIZE(backoff_ms),
+        -:   20:    .conceal_count = LWS_ARRAY_SIZE(backoff_ms),
+        -:   21:    .secs_since_valid_ping = 3,
+        -:   22:    .secs_since_valid_hangup = 10,
+        -:   23:    .jitter_percent = 20,
+        -:   24:};
+        -:   25:
+    #####:   26:static void connect_client(lws_sorted_usec_list_t *sul) {
+        -:   27:  // printf("connect_client called.\n");
+        -:   28:  // What does container_of macro do?
+    #####:   29:  my_conn *m = lws_container_of(sul, my_conn, sul);
+    #####:   30:  struct lws_client_connect_info i = {0};
+        -:   31:
+    #####:   32:  i.context = ws_context;
+    #####:   33:  i.port = m->port;
+    #####:   34:  i.address = m->ipaddr;
+    #####:   35:  printf("%d\n", m->port);
+    #####:   36:  printf("connect: %p\n", m->ipaddr);
+        -:   37:  // printf("%s\n", m->ipaddr);
+        -:   38:  // i.port = 7681;
+        -:   39:  // i.address = "localhost";
+    #####:   40:  i.path = "/";
+    #####:   41:  i.host = i.address;
+    #####:   42:  i.origin = i.address;
+    #####:   43:  i.ssl_connection = 0; // No SSL
+    #####:   44:  i.protocol = "lws-minimal";
+    #####:   45:  i.local_protocol_name = "lws-minimal-client";
+    #####:   46:  i.pwsi = &m->wsi;
+    #####:   47:  i.retry_and_idle_policy = &retry;
+    #####:   48:  i.userdata = m;
+        -:   49:
+    #####:   50:  if (!lws_client_connect_via_info(&i)) {
+    #####:   51:    if (lws_retry_sul_schedule(ws_context, 0, sul, &retry, connect_client,
+        -:   52:                               &m->retry_count)) {
+    #####:   53:      strcpy(ws_data.connection_status, "Connection failed");
+    #####:   54:      ws_data.connected = false;
+        -:   55:    }
+        -:   56:  }
+    #####:   57:}
+        -:   58:
+       14:   59:static int callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
+        -:   60:                            void *user, void *in, size_t len) {
+       14:   61:  switch (reason) {
+    #####:   62:  case LWS_CALLBACK_CLIENT_ESTABLISHED:
+        -:   63:    // printf("LWS_CALLBACK_CLIENT_ESTABLISHED\n");
+    #####:   64:    ws_data.connected = true;
+    #####:   65:    strcpy(ws_data.connection_status, "Connected");
+    #####:   66:    break;
+        -:   67:
+    #####:   68:  case LWS_CALLBACK_CLIENT_RECEIVE:
+        -:   69:    // printf("LWS_CALLBACK_CLIENT_RECEIVE\n");
+        -:   70:    // Parse and store the received message
+    #####:   71:    if (len < 2048) { // Reasonable message size limit
+        -:   72:      char temp_buffer[2048];
+    #####:   73:      memcpy(temp_buffer, in, len);
+    #####:   74:      temp_buffer[len] = '\0';
+        -:   75:      
+        -:   76:      Message parsed_message;
+    #####:   77:      if (message_parse_from_string(temp_buffer, &parsed_message)) {
+    #####:   78:        if (ws_data.messages) {
+    #####:   79:          message_list_add(ws_data.messages, &parsed_message);
+    #####:   80:          ws_data.has_new_message = true;
+        -:   81:        }
+        -:   82:      } else {
+        -:   83:        // Fallback for simple text messages
+    #####:   84:        Message simple_message = {0};
+        -:   85:        struct timeval tv;
+    #####:   86:        gettimeofday(&tv, NULL);
+    #####:   87:        simple_message.timestamp = tv.tv_sec * 1000000ULL + tv.tv_usec;
+    #####:   88:        simple_message.type = MSG_TYPE_CHAT;
+    #####:   89:        strcpy(simple_message.username, "Unknown");
+    #####:   90:        strncpy(simple_message.content, temp_buffer, MAX_MESSAGE_LENGTH - 1);
+    #####:   91:        simple_message.content[MAX_MESSAGE_LENGTH - 1] = '\0';
+        -:   92:        
+    #####:   93:        if (ws_data.messages) {
+    #####:   94:          message_list_add(ws_data.messages, &simple_message);
+    #####:   95:          ws_data.has_new_message = true;
+        -:   96:        }
+        -:   97:      }
+        -:   98:    }
+    #####:   99:    break;
+        -:  100:
+    #####:  101:  case LWS_CALLBACK_CLIENT_WRITEABLE:
+        -:  102:    // printf("LWS_CALLBACK_CLIENT_WRITEABLE\n");
+    #####:  103:    if (ws_connection.has_data_to_send) {
+        -:  104:      // printf("tried to write\n");
+        -:  105:      unsigned char buf[LWS_PRE + 512];
+    #####:  106:      unsigned char *p = &buf[LWS_PRE];
+        -:  107:
+    #####:  108:      int len = sprintf((char *)p, "%s", ws_connection.send_buffer);
+        -:  109:
+    #####:  110:      if (lws_write(wsi, p, len, LWS_WRITE_TEXT) < len) {
+    #####:  111:        return -1;
+        -:  112:      }
+        -:  113:
+    #####:  114:      ws_connection.has_data_to_send = false; // Clear flag
+        -:  115:    }
+    #####:  116:    break;
+        -:  117:
+    #####:  118:  case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
+    #####:  119:		lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
+        -:  120:			 in ? (char *)in : "(null)");
+    #####:  121:    ws_data.connected = false;
+    #####:  122:    ws_data.error = true;
+    #####:  123:    strcpy(ws_data.connection_status, "Connection error");
+    #####:  124:    goto do_retry;
+        -:  125:
+    #####:  126:  case LWS_CALLBACK_CLIENT_CLOSED:
+        -:  127:    // printf("LWS_CALLBACK_CLIENT_CLOSED\n");
+    #####:  128:    ws_data.connected = false;
+    #####:  129:    strcpy(ws_data.connection_status, "Disconnected");
+    #####:  130:    goto do_retry;
+        -:  131:
+       14:  132:  default:
+        -:  133:    // printf("default\n");
+        -:  134:
+       14:  135:    break;
+        -:  136:  }
+       14:  137:  return lws_callback_http_dummy(wsi, reason, user, in, len);
+        -:  138:
+        -:  139:
+    #####:  140:do_retry:
+    #####:  141:  if (lws_retry_sul_schedule_retry_wsi(wsi, &ws_connection.sul, connect_client,
+        -:  142:                                       &ws_connection.retry_count)) {
+    #####:  143:    lwsl_err("%s: connection attempts exhausted\n", __func__);
+    #####:  144:    strcpy(ws_data.connection_status, "Retry failed");
+        -:  145:  }
+    #####:  146:  return 0;
+        -:  147:}
+        -:  148:
+        -:  149:static const struct lws_protocols protocols[] = {
+        -:  150:    {"lws-minimal-client", callback_minimal, 0, 0, 0, NULL, 0},
+        -:  151:    LWS_PROTOCOL_LIST_TERM};
+        -:  152:
+       10:  153:bool websocket_service_init(void) {
+       10:  154:  lwsl_debug("websocket_service_init called.\n");
+        -:  155:  
+        -:  156:  // If already initialized, cleanup first to prevent leaks
+       10:  157:  if (ws_context || ws_data.messages) {
+        1:  158:    websocket_service_cleanup();
+        -:  159:  }
+        -:  160:  
+       10:  161:  struct lws_context_creation_info info = {0};
+        -:  162:
+       10:  163:  info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
+       10:  164:  info.port = CONTEXT_PORT_NO_LISTEN;
+       10:  165:  info.protocols = protocols;
+        -:  166:  // info.signal_cb = websocket_signal_cb;
+        -:  167:
+       10:  168:  int logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
+       10:  169:  lws_set_log_level(logs, NULL);
+        -:  170:
+       10:  171:  ws_context = lws_create_context(&info);
+       10:  172:  if (!ws_context)
+    #####:  173:    return false;
+        -:  174:
+        -:  175:  // Initialize message list
+       10:  176:  ws_data.messages = message_list_create(100); // Store up to 100 messages
+       10:  177:  if (!ws_data.messages) {
+    #####:  178:    lws_context_destroy(ws_context);
+    #####:  179:    ws_context = NULL;
+    #####:  180:    return false;
+        -:  181:  }
+        -:  182:
+       10:  183:  strcpy(ws_data.connection_status, "Ready to Connect");
+       10:  184:  return true;
+        -:  185:}
+        -:  186:
+    #####:  187:bool websocket_service_connect() {
+    #####:  188:  if (!ws_context)
+    #####:  189:    return false;
+        -:  190:
+        -:  191:  // NOW schedule the connection
+    #####:  192:  lws_sul_schedule(ws_context, 0, &ws_connection.sul, connect_client, 1);
+        -:  193:
+    #####:  194:  strcpy(ws_data.connection_status, "Connecting...");
+    #####:  195:  return true;
+        -:  196:}
+        -:  197:
+        1:  198:WebSocketData *websocket_service_update(void) {
+        1:  199:  if (ws_context) {
+        -:  200:    // Non-blocking service call
+        1:  201:    lws_service(ws_context, 0);
+        -:  202:  }
+        -:  203:
+        1:  204:  if (ws_connection.wsi)
+    #####:  205:    lws_callback_on_writable(ws_connection.wsi); // Keep loop active
+        -:  206:  else
+        1:  207:    strcpy(ws_data.connection_status, "Disconnected");
+        -:  208:
+        1:  209:  return &ws_data;
+        -:  210:}
+        -:  211:
+        2:  212:void websocket_service_send_message(const Message* message) {
+        2:  213:  if (!message || !ws_connection.wsi) return;
+        -:  214:  
+        -:  215:  char serialized[2048];
+    #####:  216:  int len = message_serialize_to_string(message, serialized, sizeof(serialized));
+        -:  217:  
+    #####:  218:  if (len > 0 && len < sizeof(ws_connection.send_buffer)) {
+    #####:  219:    strcpy(ws_connection.send_buffer, serialized);
+    #####:  220:    ws_connection.has_data_to_send = true;
+    #####:  221:    lws_callback_on_writable(ws_connection.wsi);
+        -:  222:  }
+        -:  223:}
+        -:  224:
+        1:  225:void websocket_service_send_text(const char* username, const char* text) {
+       1*:  226:  if (!username || !text) return;
+        -:  227:  
+        1:  228:  Message message = {0};
+        -:  229:  struct timeval tv;
+        1:  230:  gettimeofday(&tv, NULL);
+        1:  231:  message.timestamp = tv.tv_sec * 1000000ULL + tv.tv_usec;
+        1:  232:  message.type = MSG_TYPE_CHAT;
+        1:  233:  strncpy(message.username, username, MAX_USERNAME_LENGTH - 1);
+        1:  234:  message.username[MAX_USERNAME_LENGTH - 1] = '\0';
+        1:  235:  strncpy(message.content, text, MAX_MESSAGE_LENGTH - 1);
+        1:  236:  message.content[MAX_MESSAGE_LENGTH - 1] = '\0';
+        1:  237:  strcpy(message.metadata, "");
+        -:  238:  
+        1:  239:  websocket_service_send_message(&message);
+        -:  240:}
+        -:  241:
+       11:  242:void websocket_service_cleanup(void) {
+        -:  243:  // Clean up connection state
+       11:  244:  memset(&ws_connection, 0, sizeof(ws_connection));
+        -:  245:  
+        -:  246:  // Clean up message list
+       11:  247:  if (ws_data.messages) {
+       10:  248:    message_list_destroy(ws_data.messages);
+       10:  249:    ws_data.messages = NULL;
+        -:  250:  }
+        -:  251:  
+        -:  252:  // Clean up websocket context
+       11:  253:  if (ws_context) {
+       10:  254:    lws_context_destroy(ws_context);
+       10:  255:    ws_context = NULL;
+        -:  256:  }
+        -:  257:  
+        -:  258:  // Reset websocket data
+       11:  259:  memset(&ws_data, 0, sizeof(ws_data));
+       11:  260:}
+        -:  261:
+    #####:  262:bool websocket_should_close(void) {
+    #####:  263:  return ws_data.error || !ws_data.connected;
+        -:  264:}

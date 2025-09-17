@@ -244,10 +244,10 @@ Clay_RenderCommandArray LoginPage_CreateLayout(LoginPage_Data *data) {
         if (data->status == ConnectionError) {
           CLAY_TEXT(
               CLAY_STRING(
-                  "Connection Error: please enter the appropriate IP adress."),
+                  "Connection Error: please enter the appropriate IP address."),
               CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
                                 .fontSize = 18,
-                               .textAlignment = CLAY_TEXT_ALIGN_CENTER,
+                                .textAlignment = CLAY_TEXT_ALIGN_CENTER,
                                 .textColor = {255, 0, 0, 255}}));
         }
       }
@@ -259,6 +259,14 @@ Clay_RenderCommandArray LoginPage_CreateLayout(LoginPage_Data *data) {
             data->status = InitiateConnect;
             ws_connection.ipaddr = data->ipaddr;
             ws_connection.port = atoi(data->port);
+
+            // Clean the username from artifact
+            data->username_len = strlen(data->username_buf);
+            if (data->username_buf[data->username_len - 1] == '_') {
+          printf("cleaned\n");
+              data->username[data->username_len - 1] = '\0';
+              data->username_len--;
+            }
           }
         }
       }

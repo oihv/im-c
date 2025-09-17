@@ -7,103 +7,102 @@
 #include "mainpage.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "mainpage.h"
 #include <string.h>
-#include "../renderers/raylib/raylib.h"
-#include "../components/textbox.h"
+#include <math.h>
 
-void RenderHeaderButton(Clay_String text)
-{
-    CLAY({.layout = {.padding = {16, 16, 8, 8}},
-          .backgroundColor = {140, 140, 140, 255},
-          .cornerRadius = CLAY_CORNER_RADIUS(5)})
-    {
-        CLAY_TEXT(text, CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                          .fontSize = 16,
-                                          .textColor = {255, 255, 255, 255}}));
-    }
+// Forward declaration
+extern my_conn ws_connection;
+
+void RenderHeaderButton(Clay_String text) {
+  CLAY({.layout = {.padding = {16, 16, 8, 8}},
+        .backgroundColor = {140, 140, 140, 255},
+        .cornerRadius = CLAY_CORNER_RADIUS(5)}) {
+    CLAY_TEXT(text, CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
+                                      .fontSize = 16,
+                                      .textColor = {255, 255, 255, 255}}));
+  }
 }
 
-void RenderDropdownMenuItem(Clay_String text)
-{
-    CLAY({.layout = {.padding = CLAY_PADDING_ALL(16)}})
-    {
-        CLAY_TEXT(text, CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                          .fontSize = 16,
-                                          .textColor = {255, 255, 255, 255}}));
-    }
+
+void RenderDropdownMenuItem(Clay_String text) {
+  CLAY({.layout = {.padding = CLAY_PADDING_ALL(16)}}) {
+    CLAY_TEXT(text, CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
+                                      .fontSize = 16,
+                                      .textColor = {255, 255, 255, 255}}));
+  }
 }
+
+// Concat b to a, store it in res
+void StringConcat(char *res, char *a, char *b) {}
 
 // Add this function to calculate responsive font size
 int GetResponsiveFontSize(int baseFontSize, int windowWidth, int windowHeight) {
-    // Base calculation on window width (you can adjust the formula)
-    float scaleFactor = (float)windowWidth / 1200.0f; // 1200px as reference width
-    
-    // Clamp the scale factor between 0.8 and 1.5 for reasonable limits
-    if (scaleFactor < 0.8f) scaleFactor = 0.8f;
-    if (scaleFactor > 1.5f) scaleFactor = 1.5f;
-    
-    return (int)(baseFontSize * scaleFactor);
+  // Base calculation on window width (you can adjust the formula)
+  float scaleFactor = (float)windowWidth / 1200.0f; // 1200px as reference width
+
+  // Clamp the scale factor between 0.8 and 1.5 for reasonable limits
+  if (scaleFactor < 0.8f)
+    scaleFactor = 0.8f;
+  if (scaleFactor > 1.5f)
+    scaleFactor = 1.5f;
+
+  return (int)(baseFontSize * scaleFactor);
 }
 
-typedef struct
-{
-    Clay_String title;
-    Clay_String contents;
+typedef struct {
+  Clay_String title;
+  Clay_String contents;
 } Document;
 
-typedef struct
-{
-    Document *documents;
-    uint32_t length;
+typedef struct {
+  Document *documents;
+  uint32_t length;
 } DocumentArray;
 
 Document documentsRaw[5];
 
-DocumentArray documents = {
-    .length = 5,
-    .documents = documentsRaw};
+DocumentArray documents = {.length = 5, .documents = documentsRaw};
 
-typedef struct
-{
-    Clay_String sender;
-    Clay_String text;
-    bool isSender; // true = user, false = bot/system
+typedef struct {
+  Clay_String sender;
+  Clay_String text;
+  bool isSender; // true = user, false = bot/system
 } ChatMessage;
+
+// Enhanced scroll state tracking
+typedef struct {
+  float manual_scroll_velocity;
+  float last_manual_scroll_time;
+  bool is_manual_scrolling;
+} ScrollState;
 
 #define MAX_MESSAGES 100
 ChatMessage chatMessages[MAX_MESSAGES];
 int chatMessageCount = 0;
 
-static inline Clay_String ClayStr(const char *s)
-{
-    return (Clay_String){s, (int)strlen(s)}; // positional init: {ptr, length}
+static inline Clay_String ClayStr(const char *s) {
+  return (Clay_String){s, (int)strlen(s)}; // positional init: {ptr, length}
 }
 
-void AddBotReply(const char *replyText)
-{
-    if (chatMessageCount < MAX_MESSAGES)
-    {
-        chatMessages[chatMessageCount].sender = CLAY_STRING("Bot");
-        chatMessages[chatMessageCount].text = (Clay_String){
-            .chars = replyText,
-            .length = (int)strlen(replyText)};
-        chatMessages[chatMessageCount].isSender = false; // bot/system
-        chatMessageCount++;
-    }
+void AddBotReply(const char *replyText) {
+  if (chatMessageCount < MAX_MESSAGES) {
+    chatMessages[chatMessageCount].sender = CLAY_STRING("Bot");
+    chatMessages[chatMessageCount].text =
+        (Clay_String){.chars = replyText, .length = (int)strlen(replyText)};
+    chatMessages[chatMessageCount].isSender = false; // bot/system
+    chatMessageCount++;
+  }
 }
 
-void AddUserMessage(const char *userText)
-{
-    if (chatMessageCount < MAX_MESSAGES)
-    {
-        chatMessages[chatMessageCount].sender = CLAY_STRING("Ben"); // or use ClayStr("Ben") if dynamic
-        chatMessages[chatMessageCount].text = (Clay_String){
-            .chars = userText,
-            .length = (int)strlen(userText)};
-        chatMessages[chatMessageCount].isSender = true; // user
-        chatMessageCount++;
-    }
+void AddUserMessage(const char *userText) {
+  if (chatMessageCount < MAX_MESSAGES) {
+    chatMessages[chatMessageCount].sender =
+        CLAY_STRING("Ben"); // or use ClayStr("Ben") if dynamic
+    chatMessages[chatMessageCount].text =
+        (Clay_String){.chars = userText, .length = (int)strlen(userText)};
+    chatMessages[chatMessageCount].isSender = true; // user
+    chatMessageCount++;
+  }
 }
 
 typedef struct {
@@ -186,6 +185,18 @@ void UpdateManualScrollVelocity(ChatApp_Data *data) {
       data->manual_scroll_state.last_manual_scroll_time = current_time;
       data->auto_scrolling = false; // Stop auto-scroll when manually scrolling
     }
+    
+    // Apply momentum-based deceleration for manual scrolling
+    if (data->manual_scroll_state.is_manual_scrolling) {
+      float time_since_input = current_time - data->manual_scroll_state.last_manual_scroll_time;
+      
+      // Stop manual scrolling after a short delay
+      if (time_since_input > 0.3f) { // 300ms delay
+        data->manual_scroll_state.is_manual_scrolling = false;
+        data->manual_scroll_state.manual_scroll_velocity = 0;
+      }
+    }
+  }
 }
 
 // Convert WebSocket messages to ChatMessage format for rendering
@@ -213,6 +224,29 @@ void UpdateAutoScroll(ChatApp_Data *data) {
         return;
       }
     }
+    
+    float current_scroll = scrollData.scrollPosition->y;
+    float target_scroll = data->scroll_target;
+    
+    // Calculate distance to target
+    float distance = target_scroll - current_scroll;
+    
+    // If we're close enough, snap to target and stop
+    if (fabs(distance) < 1.0f) {
+      scrollData.scrollPosition->y = target_scroll;
+      data->auto_scrolling = false;
+      data->scroll_velocity = 0;
+      return;
+    }
+    
+    // Apply smooth easing with velocity
+    float acceleration = distance * 0.15f; // Spring-like acceleration
+    data->scroll_velocity += acceleration;
+    data->scroll_velocity *= 0.85f; // Damping to prevent oscillation
+    
+    // Update scroll position
+    scrollData.scrollPosition->y += data->scroll_velocity;
+  }
 }
 
 void UpdateChatFromWebSocket(ChatApp_Data *data) {
@@ -270,9 +304,18 @@ void UpdateChatFromWebSocket(ChatApp_Data *data) {
   }
 }
 
-Clay_RenderCommandArray ClayVideoDemo_CreateLayout(ClayVideoDemo_Data *data)
-{
-    data->frameArena.offset = 0;
+void HandleSidebarInteraction(Clay_ElementId elementId,
+                              Clay_PointerData pointerData, intptr_t userData) {
+  SidebarClickData *clickData = (SidebarClickData *)userData;
+  // If this button was clicked
+  if (pointerData.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
+    if (clickData->requestedDocumentIndex >= 0 &&
+        clickData->requestedDocumentIndex < documents.length) {
+      // Select the corresponding document
+      *clickData->selectedDocumentIndex = clickData->requestedDocumentIndex;
+    }
+  }
+}
 
 void HandleSendInteraction(Clay_ElementId elementId,
                            Clay_PointerData pointerData, intptr_t userData) {
@@ -467,10 +510,10 @@ Clay_RenderCommandArray ChatApp_CreateLayout(ChatApp_Data *data) {
         Clay_Color status_color;
         
         if (data->ws_data && data->ws_data->connected) {
-          connection_status = CLAY_STRING("🟢 Connected");
+          connection_status = CLAY_STRING("Connected");
           status_color = (Clay_Color){0, 150, 0, 255}; // Green
         } else {
-          connection_status = CLAY_STRING("🔴 Disconnected");
+          connection_status = CLAY_STRING("Disconnected");
           status_color = (Clay_Color){150, 0, 0, 255}; // Red
         }
         
@@ -559,220 +602,231 @@ Clay_RenderCommandArray ChatApp_CreateLayout(ChatApp_Data *data) {
               .backgroundColor = contentBackgroundColor,
               .cornerRadius = CLAY_CORNER_RADIUS(8),
               .layout = {.layoutDirection = CLAY_LEFT_TO_RIGHT,
-                         .sizing = {
-                             .width = CLAY_SIZING_GROW(1),
-                             .height = CLAY_SIZING_GROW(0)},
-                         .childGap = 16}})
-        {
-            CLAY({.id = CLAY_ID("Sidebar"),
-                  .backgroundColor = contentBackgroundColor,
-                  .cornerRadius = CLAY_CORNER_RADIUS(8),
-                  .layout = {
-                      .layoutDirection = CLAY_TOP_TO_BOTTOM,
-                      .padding = CLAY_PADDING_ALL(16),
-                      .childGap = 16,
-                      .sizing = {
-                          .width = CLAY_SIZING_FIXED(150),
-                          .height = CLAY_SIZING_GROW(0)}}})
-            {
-                // --- IP Address panel ---
-                CLAY({.id = CLAY_ID("IpAddress"),
-                      .backgroundColor = {120, 120, 120, 255},
-                      .cornerRadius = CLAY_CORNER_RADIUS(8),
-                      .layout = {
-                          .padding = CLAY_PADDING_ALL(12),
-                          .sizing = {.width = CLAY_SIZING_GROW(0)}}})
-                {
-                    CLAY_TEXT(CLAY_STRING("IP Address: 127.0.0.1:1000"),
-                              CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16, .fontSize = bodyFontSize, .textColor = {255, 255, 255, 255}}));
+                         .sizing = {.width = CLAY_SIZING_GROW(1),
+                                    .height = CLAY_SIZING_GROW(1)},
+                         .childGap = 0}}) {
+          
+          // Main chat content with scroll - Enable scroll with proper Clay scroll container
+          CLAY({.id = CLAY_ID("MainContent"),
+                .layout = {.layoutDirection = CLAY_TOP_TO_BOTTOM,
+                           .childGap = 16,
+                           .padding = CLAY_PADDING_ALL(16),
+                           .sizing = {.width = CLAY_SIZING_GROW(1),
+                                      .height = CLAY_SIZING_GROW(1)}},
+                .clip = {.vertical = true, .childOffset = Clay_GetScrollOffset()}}) // Proper Clay scroll container
+          {
+            for (int i = 0; i < chatMessageCount; i++) {
+              ChatMessage message = chatMessages[i];
+
+              bool isUser = message.isSender;
+
+              CLAY({.layout = {
+                        .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                        .sizing = {.width = CLAY_SIZING_GROW(1)},
+                        .childAlignment = {.x = isUser ? CLAY_ALIGN_X_RIGHT
+                                                       : CLAY_ALIGN_X_LEFT}}}) {
+                CLAY({.layout = {.layoutDirection = CLAY_TOP_TO_BOTTOM,
+                                 .padding = CLAY_PADDING_ALL(10),
+                                 .sizing = {.width = CLAY_SIZING_FIT(1)},
+                                 .childGap = 4},
+                      .backgroundColor =
+                          isUser ? (Clay_Color){0, 120, 215, 255}
+                                 : // User bubble (blue)
+                              (Clay_Color){120, 120, 120,
+                                           255}, // Bot bubble (gray)
+
+                      // Rounded corners like WhatsApp
+                      .cornerRadius =
+                          isUser ? (Clay_CornerRadius){.topLeft = 12,
+                                                       .topRight = 12,
+                                                       .bottomLeft = 12,
+                                                       .bottomRight = 2}
+                                 : (Clay_CornerRadius){.topLeft = 12,
+                                                       .topRight = 12,
+                                                       .bottomLeft = 2,
+                                                       .bottomRight = 12}}) {
+                  
+                  // Show sender name for non-user messages
+                  if (!isUser) {
+                    CLAY_TEXT(
+                        message.sender,
+                        CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
+                                          .fontSize = bodyFontSize - 2,
+                                          .textColor = {200, 200, 200, 255}}));
+                  }
+                  
+                  CLAY_TEXT(
+                      message.text,
+                      CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
+                                        .fontSize = bodyFontSize,
+                                        .textColor = {255, 255, 255, 255}}));
                 }
-
-                // --- Username panel ---
-                CLAY({.id = CLAY_ID("Username"),
-                      .backgroundColor = {120, 120, 120, 255},
-                      .cornerRadius = CLAY_CORNER_RADIUS(8),
-                      .layout = {
-                          .padding = CLAY_PADDING_ALL(12),
-                          .sizing = {.width = CLAY_SIZING_GROW(0)}}})
-                {
-                    CLAY_TEXT(CLAY_STRING("Username: Ben"),
-                              CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16, .fontSize = bodyFontSize, .textColor = {255, 255, 255, 255}}));
-                }
-
-                // --- Spacer to push logout button down ---
-                CLAY({.layout = {.sizing = {.height = CLAY_SIZING_GROW(1)}}});
-
-                // --- Logout button ---
-                Clay_Color logoutBase = {120, 120, 120, 255};
-                Clay_Color logoutHover = {140, 140, 140, 255};
-                Clay_Color logoutColor = logoutBase;
-                if (Clay_Hovered())
-                    logoutColor = logoutHover;
-
-                CLAY({.id = CLAY_ID("LogoutButton"),
-                      .backgroundColor = logoutColor, // Use hover color
-                      .cornerRadius = CLAY_CORNER_RADIUS(8),
-                      .layout = {
-                          .padding = CLAY_PADDING_ALL(12),
-                          .sizing = {.width = CLAY_SIZING_GROW(0)},
-                          .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER}}})
-                {
-                    CLAY_TEXT(CLAY_STRING("Logout"),
-                              CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16, .fontSize = bodyFontSize, .textColor = {255, 255, 255, 255}}));
-                }
+              }
             }
-
-            // 📌 New vertical container for MainContent + BottomBar
-            CLAY({.id = CLAY_ID("RightPane"),
+          }
+          
+          // Scrollbar container - only show when content overflows
+          Clay_ElementId mainContentId = CLAY_ID("MainContent");
+          Clay_ScrollContainerData scrollData = Clay_GetScrollContainerData(mainContentId);
+          
+          if (scrollData.found && scrollData.contentDimensions.height > scrollData.scrollContainerDimensions.height) {
+            CLAY({.id = CLAY_ID("ScrollBarTrack"),
+                  .backgroundColor = {50, 50, 50, 255},
                   .layout = {.layoutDirection = CLAY_TOP_TO_BOTTOM,
-                             .sizing = {
-                                 .width = CLAY_SIZING_GROW(1),
-                                 .height = CLAY_SIZING_GROW(0)},
-                             .childGap = 16}})
-            {
-                CLAY({.id = CLAY_ID("MainContent"),
-                      .backgroundColor = contentBackgroundColor,
-                      .cornerRadius = CLAY_CORNER_RADIUS(8),
-                      .clip = {.vertical = true, .childOffset = Clay_GetScrollOffset()},
-                      .layout = {.layoutDirection = CLAY_TOP_TO_BOTTOM,
-                                 .childGap = 16,
-                                 .padding = CLAY_PADDING_ALL(16),
-                                 .sizing = {
-                                     .width = CLAY_SIZING_GROW(1),
-                                     .height = CLAY_SIZING_GROW(1)}}})
-
-                {
-                    for (int i = chatMessageCount - 1; i >= 0; i--)
-                    {
-                        ChatMessage message = chatMessages[i];
-
-                        bool isUser = message.isSender;
-
-                        CLAY({.layout = {
-                                  .layoutDirection = CLAY_LEFT_TO_RIGHT,
-                                  .sizing = {.width = CLAY_SIZING_GROW(1)},
-                                  .childAlignment = {.x = isUser ? CLAY_ALIGN_X_RIGHT : CLAY_ALIGN_X_LEFT}}})
-                        {
-                            CLAY({.layout = {
-                                      .layoutDirection = CLAY_TOP_TO_BOTTOM,
-                                      .padding = CLAY_PADDING_ALL(10),
-                                      .sizing = {.width = CLAY_SIZING_FIT(1)}},
-                                  .backgroundColor = isUser ? (Clay_Color){0, 120, 215, 255} : // User bubble (blue)
-                                                         (Clay_Color){120, 120, 120, 255},     // Bot bubble (gray)
-
-                                  // Rounded corners like WhatsApp
-                                  .cornerRadius = isUser ? (Clay_CornerRadius){.topLeft = 12, .topRight = 12, .bottomLeft = 12, .bottomRight = 2} : (Clay_CornerRadius){.topLeft = 12, .topRight = 12, .bottomLeft = 2, .bottomRight = 12}})
-                            {
-                                CLAY_TEXT(message.text, CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                                                          .fontSize = bodyFontSize,
-                                                                          .textColor = {255, 255, 255, 255}}));
-                            }
-                        }
-                    }
-                }
-
-                CLAY({.id = CLAY_ID("BottomBar"),
-                      .layout = {
-                          .layoutDirection = CLAY_LEFT_TO_RIGHT, // Add this line
-                          .sizing = {
-                              .height = CLAY_SIZING_FIXED(60),
-                              .width = CLAY_SIZING_GROW(1)},
-                          .padding = CLAY_PADDING_ALL(16), // Change this line
-                          .childGap = 16,
-                          .childAlignment = {.y = CLAY_ALIGN_Y_CENTER}},
-                      .backgroundColor = contentBackgroundColor,
-                      .cornerRadius = CLAY_CORNER_RADIUS(8)})
-                {
-                    CLAY({
-                        .id = CLAY_ID("InputBox"),
-                        .layout = {.sizing = {
-                                       .width = CLAY_SIZING_GROW(1),
-                                   }},
-                    })
-                    {
-                        CLAY({.layout = {.padding = {16, 16, 8, 8},
-                                         .sizing = {.width = CLAY_SIZING_GROW(0)}},
-                              .backgroundColor = {140, 140, 140, 255},
-                              .cornerRadius = CLAY_CORNER_RADIUS(5)})
-                        {
-                            // Add hover colors for input box
-                            Clay_Color inputBase = {140, 140, 140, 255};
-                            Clay_Color inputHover = {160, 160, 160, 255};
-                            Clay_Color inputColor = inputBase;
-                            if (Clay_Hovered())
-                                inputColor = inputHover;
-
-                            CLAY({.layout = {.padding = CLAY_PADDING_ALL(3),
-                                             .sizing = {.width = CLAY_SIZING_GROW(0)}},
-                                  .backgroundColor = inputColor,
-                                  .cornerRadius = CLAY_CORNER_RADIUS(5)})
-                            {
-                                CLAY_TEXT(CLAY_STRING("Enter a message.."), CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                                                                              .fontSize = bodyFontSize,
-                                                                                              .textColor = {200, 200, 200, 255}}));
-                            }
-                            // Component_TextBoxData username_data = (Component_TextBoxData) {
-                            //    .id = CLAY_STRING("username_textbox"),
-                            //    .textConfig = (Clay_TextElementConfig) {
-                            //                  .fontId = FONT_ID_BODY_16,
-                            //                  .fontSize = 16,
-                            //                  .textColor = {255, 255, 255, 255}},
-                            //    // .buffer = data->username_buf,
-                            //    // .frameCount = &(data->frameCount),
-                            //    // .len = &data->username_len,
-                            //    // .maxLen = sizeof(data->username_buf),
-                            //    // .placeholder = CLAY_STRING("Enter your username:"),
-                            //    // .eventData = (TextBoxEventData) {
-                            //    //   .focusList = data->focusList,
-                            //    //   .isFocus = data->focusList,
-                            //    //   .focus_len = 2,
-                            //    }
-                            //  };
-
-                            // renderTextBox(&username_data);
-                        }
-                    }
-                    Clay_Color base = {140, 140, 140, 255};
-                    Clay_Color hover = {160, 160, 160, 255};
-
-                    Clay_Color btnColor = base;
-                    if (Clay_Hovered())
-                        btnColor = hover;
-
-                    CLAY({.id = CLAY_ID("SendButton"),
-                          .layout = {.sizing = {.width = CLAY_SIZING_FIXED(70),
-                                                .height = CLAY_SIZING_FIXED(30)},
-                                     .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER},
-                                     .padding = CLAY_PADDING_ALL(6)},
-                          .backgroundColor = btnColor,
-                          .cornerRadius = CLAY_CORNER_RADIUS(5)})
-                    {
-                        SendClickData *clickData = (SendClickData *)(data->frameArena.memory + data->frameArena.offset);
-                        *clickData = (SendClickData){0};
-                        data->frameArena.offset += sizeof(SendClickData);
-
-                        // Still use OnHover, but inside your handler check if the mouse was clicked
-                        Clay_OnHover(HandleSendInteraction, (intptr_t)clickData);
-
-                        CLAY_TEXT(CLAY_STRING("Send"), CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
-                                                                         .fontSize = bodyFontSize,
-                                                                         .textColor = {255, 255, 255, 255}}));
-                    }
-                }
-
-            } // End RightPane
+                             .sizing = {.width = CLAY_SIZING_FIXED(12),
+                                        .height = CLAY_SIZING_GROW(1)},
+                             .padding = {.top = 2, .bottom = 2, .left = 2, .right = 2}}}) {
+              
+              // Calculate scrollbar dimensions
+              float contentHeight = scrollData.contentDimensions.height;
+              float containerHeight = scrollData.scrollContainerDimensions.height;
+              float trackHeight = containerHeight - 4; // Account for padding
+              
+              // Calculate scrollbar thumb height (proportional to visible content)
+              float scrollbarRatio = containerHeight / contentHeight;
+              float thumbHeight = trackHeight * scrollbarRatio;
+              if (thumbHeight < 20) thumbHeight = 20; // Minimum thumb height
+              
+              // Calculate thumb position based on scroll offset
+              float maxScrollY = contentHeight - containerHeight;
+              float scrollRatio = 0;
+              if (maxScrollY > 0 && scrollData.scrollPosition) {
+                scrollRatio = (-scrollData.scrollPosition->y) / maxScrollY;
+                if (scrollRatio < 0) scrollRatio = 0;
+                if (scrollRatio > 1) scrollRatio = 1;
+              }
+              
+              float thumbY = scrollRatio * (trackHeight - thumbHeight);
+              
+              // Top spacer
+              if (thumbY > 0) {
+                CLAY({.layout = {.sizing = {.height = CLAY_SIZING_FIXED(thumbY)}}});
+              }
+              
+              // Scrollbar thumb (draggable part)
+              ScrollBarData *scrollBarData = (ScrollBarData*)(data->frameArena.memory + data->frameArena.offset);
+              *scrollBarData = (ScrollBarData){
+                .app_data = data,
+                .is_dragging = false,
+                .scroll_bar_height = thumbHeight,
+                .scroll_bar_y = thumbY
+              };
+              data->frameArena.offset += sizeof(ScrollBarData);
+              
+              CLAY({.id = CLAY_ID("ScrollBarThumb"),
+                    .backgroundColor = Clay_Hovered() ? (Clay_Color){180, 180, 180, 255} : (Clay_Color){150, 150, 150, 255},
+                    .cornerRadius = CLAY_CORNER_RADIUS(4),
+                    .layout = {.sizing = {.height = CLAY_SIZING_FIXED(thumbHeight),
+                                          .width = CLAY_SIZING_GROW(1)}}}) {
+                Clay_OnHover(HandleScrollBarInteraction, (intptr_t)scrollBarData);
+              }
+              
+              // Bottom spacer
+              float remainingHeight = trackHeight - thumbY - thumbHeight;
+              if (remainingHeight > 0) {
+                CLAY({.layout = {.sizing = {.height = CLAY_SIZING_FIXED(remainingHeight)}}});
+              }
+            }
+          }
         }
+
+        CLAY({.id = CLAY_ID("BottomBar"),
+              .layout = {.layoutDirection = CLAY_LEFT_TO_RIGHT, // Add this line
+                         .sizing = {.height = CLAY_SIZING_FIXED(60),
+                                    .width = CLAY_SIZING_GROW(1)},
+                         .padding = CLAY_PADDING_ALL(16), // Change this line
+                         .childGap = 16,
+                         .childAlignment = {.y = CLAY_ALIGN_Y_CENTER}},
+              .backgroundColor = contentBackgroundColor,
+              .cornerRadius = CLAY_CORNER_RADIUS(8)}) {
+          // Add hover colors for input box
+          CLAY({.layout = {.padding = {16, 16, 8, 8},
+                           .sizing = {.width = CLAY_SIZING_GROW(0)}},
+                .backgroundColor = {140, 140, 140, 255},
+                .cornerRadius = CLAY_CORNER_RADIUS(5)}) {
+
+            // CLAY_TEXT(
+            //     CLAY_STRING("Enter a message.."),
+            //     CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
+            //                       .fontSize = bodyFontSize,
+            //                       .textColor = {200, 200, 200, 255}}));
+
+            Component_TextBoxData message_data = (Component_TextBoxData){
+                .id = CLAY_STRING("message_textbox"),
+                .textConfig =
+                    (Clay_TextElementConfig){.fontId = FONT_ID_BODY_16,
+                                             .fontSize = bodyFontSize,
+                                             .textColor = {255, 255, 255, 255}},
+                .buffer = data->message_buffer,
+                .frameCount = &(data->frameCount),
+                .len = &data->message_len,
+                .maxLen = sizeof(data->message_buffer),
+                .placeholder = CLAY_STRING("Enter your message..."),
+                .eventData = (TextBoxEventData){
+                    .focusList = &data->focusList,
+                    .isFocus = &data->focusList,
+                    .focus_len = 1,
+                }};
+
+            renderTextBox(&message_data);
+          }
+          Clay_Color base = {140, 140, 140, 255};
+          Clay_Color hover = {120, 120, 120, 255};
+
+          CLAY({.id = CLAY_ID("SendButton"),
+                .layout = {.sizing = {.width = CLAY_SIZING_FIXED(70),
+                                      .height = CLAY_SIZING_FIXED(30)},
+                           .childAlignment = {.x = CLAY_ALIGN_X_CENTER,
+                                              .y = CLAY_ALIGN_Y_CENTER},
+                           .padding = CLAY_PADDING_ALL(6)},
+                .backgroundColor = Clay_Hovered() ? hover : base,
+                .cornerRadius = CLAY_CORNER_RADIUS(5)}) {
+            SendClickData *clickData =
+                (SendClickData *)(data->frameArena.memory +
+                                  data->frameArena.offset);
+            *clickData = (SendClickData){.app_data = data};
+            data->frameArena.offset += sizeof(SendClickData);
+
+            // Still use OnHover, but inside your handler check if the mouse was
+            // clicked
+            Clay_OnHover(HandleSendInteraction, (intptr_t)clickData);
+
+            CLAY_TEXT(CLAY_STRING("Send"),
+                      CLAY_TEXT_CONFIG({.fontId = FONT_ID_BODY_16,
+                                        .fontSize = bodyFontSize,
+                                        .textColor = {255, 255, 255, 255}}));
+          }
+        }
+        if (IsMouseButtonDown(0) && Clay_PointerOver(Clay_GetElementId(
+                                        CLAY_STRING("message_textbox")))) {
+          data->focusList = true;
+        } else if (IsMouseButtonDown(0) &&
+                   !Clay_PointerOver(
+                       Clay_GetElementId(CLAY_STRING("message_textbox")))) {
+          data->focusList = false;
+        }
+
+        // Handle Enter key to send message
+        if (data->focusList && IsKeyPressed(KEY_ENTER) && data->message_len > 0 && 
+            data->ws_data && data->ws_data->connected) {
+           // printf("test\n");
+           SendMessage(data);
+        }
+
+      } // End RightPane
     }
+  }
 
-    // if (mouseButtonDown(0) && Clay_PointerOver(Clay_GetElementId(CLAY_STRING("ProfilePicture")))) {
-    //     // Handle profile picture clicked
-    // }
-    Clay_RenderCommandArray renderCommands = Clay_EndLayout();
+  // if (mouseButtonDown(0) &&
+  // Clay_PointerOver(Clay_GetElementId(CLAY_STRING("ProfilePicture")))) {
+  //     // Handle profile picture clicked
+  // }
+  Clay_RenderCommandArray renderCommands = Clay_EndLayout();
 
-    for (int32_t i = 0; i < renderCommands.length; i++)
-    {
-        Clay_RenderCommandArray_Get(&renderCommands, i)->boundingBox.y += data->yOffset;
-    }
+  for (int32_t i = 0; i < renderCommands.length; i++) {
+    Clay_RenderCommandArray_Get(&renderCommands, i)->boundingBox.y +=
+        data->yOffset;
+  }
 
-    return renderCommands;
+  return renderCommands;
 }

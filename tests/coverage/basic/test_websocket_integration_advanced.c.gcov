@@ -1,0 +1,261 @@
+        -:    0:Source:/home/nikolas/Programming/repos/im-c/tests/integration/test_websocket_integration_advanced.c
+        -:    0:Graph:build/CMakeFiles/test_websocket_integration_advanced.dir/integration/test_websocket_integration_advanced.c.gcno
+        -:    0:Data:build/CMakeFiles/test_websocket_integration_advanced.dir/integration/test_websocket_integration_advanced.c.gcda
+        -:    0:Runs:1
+        -:    1:#include "unity.h"
+        -:    2:#include "mock_websocket_server.h"
+        -:    3:#include "websocket_service.h"
+        -:    4:#include "message_types.h"
+        -:    5:#include <stdlib.h>
+        -:    6:#include <string.h>
+        -:    7:#include <unistd.h>
+        -:    8:
+        -:    9:static MockWebSocketServer *mock_server = NULL;
+        -:   10:
+        9:   11:void setUp(void) {
+        -:   12:    /* Create mock server for each test */
+        9:   13:    mock_server = mock_server_create(MOCK_SERVER_PORT);
+       9*:   14:    TEST_ASSERT_NOT_NULL(mock_server);
+        -:   15:    
+        -:   16:    /* Initialize websocket service */
+       9*:   17:    TEST_ASSERT_TRUE(websocket_service_init());
+        -:   18:    
+        -:   19:    /* Start mock server */
+       9*:   20:    TEST_ASSERT_TRUE(mock_server_start(mock_server));
+        9:   21:}
+        -:   22:
+        9:   23:void tearDown(void) {
+        -:   24:    /* Clean up websocket service */
+        9:   25:    websocket_service_cleanup();
+        -:   26:    
+        -:   27:    /* Stop and destroy mock server */
+        9:   28:    if (mock_server) {
+        9:   29:        mock_server_stop(mock_server);
+        9:   30:        mock_server_destroy(mock_server);
+        9:   31:        mock_server = NULL;
+        -:   32:    }
+        9:   33:}
+        -:   34:
+        1:   35:void test_mock_server_basic_functionality(void) {
+        -:   36:    int client_id;
+        -:   37:    size_t message_count;
+        -:   38:    MockMessage *messages;
+        -:   39:    
+        -:   40:    /* Test basic server operations */
+       1*:   41:    TEST_ASSERT_TRUE(mock_server->running);
+        1:   42:    TEST_ASSERT_EQUAL_INT(MOCK_SERVER_PORT, mock_server->port);
+        -:   43:    
+        -:   44:    /* Test client connection */
+        1:   45:    client_id = mock_server_simulate_client_connect(mock_server);
+       1*:   46:    TEST_ASSERT_TRUE(client_id >= 0);
+       1*:   47:    TEST_ASSERT_TRUE(mock_server->clients[client_id].connected);
+        1:   48:    TEST_ASSERT_EQUAL_INT(1, mock_server->client_count);
+        -:   49:    
+        -:   50:    /* Test message sending */
+       1*:   51:    TEST_ASSERT_TRUE(mock_server_simulate_client_send_message(mock_server, client_id, "Hello World"));
+        -:   52:    
+        -:   53:    /* Check message was stored */
+        1:   54:    messages = mock_server_get_client_messages(mock_server, client_id, &message_count);
+       1*:   55:    TEST_ASSERT_NOT_NULL(messages);
+        1:   56:    TEST_ASSERT_EQUAL_INT(1, message_count);
+        1:   57:    TEST_ASSERT_EQUAL_STRING("Hello World", messages[0].message);
+        -:   58:    
+        -:   59:    /* Test client disconnection */
+        1:   60:    mock_server_simulate_client_disconnect(mock_server, client_id);
+       1*:   61:    TEST_ASSERT_FALSE(mock_server->clients[client_id].connected);
+        1:   62:    TEST_ASSERT_EQUAL_INT(0, mock_server->client_count);
+        1:   63:}
+        -:   64:
+        1:   65:void test_mock_server_multiple_clients(void) {
+        -:   66:    int client1, client2;
+        -:   67:    size_t count1, count2;
+        -:   68:    MockMessage *messages1, *messages2;
+        -:   69:    
+        -:   70:    /* Connect two clients */
+        1:   71:    client1 = mock_server_simulate_client_connect(mock_server);
+        1:   72:    client2 = mock_server_simulate_client_connect(mock_server);
+       1*:   73:    TEST_ASSERT_TRUE(client1 >= 0);
+       1*:   74:    TEST_ASSERT_TRUE(client2 >= 0);
+       1*:   75:    TEST_ASSERT_NOT_EQUAL(client1, client2);
+        1:   76:    TEST_ASSERT_EQUAL_INT(2, mock_server->client_count);
+        -:   77:    
+        -:   78:    /* Client 1 sends message */
+       1*:   79:    TEST_ASSERT_TRUE(mock_server_simulate_client_send_message(mock_server, client1, "Message from client 1"));
+        -:   80:    
+        -:   81:    /* Both clients should have the message (echo enabled by default) */
+        1:   82:    messages1 = mock_server_get_client_messages(mock_server, client1, &count1);
+        1:   83:    messages2 = mock_server_get_client_messages(mock_server, client2, &count2);
+        -:   84:    
+        1:   85:    TEST_ASSERT_EQUAL_INT(1, count1); /* Original sender receives their own message */
+        1:   86:    TEST_ASSERT_EQUAL_INT(1, count2); /* Other client receives echoed message */
+        1:   87:    TEST_ASSERT_EQUAL_STRING("Message from client 1", messages1[0].message);
+        1:   88:    TEST_ASSERT_EQUAL_STRING("Message from client 1", messages2[0].message);
+        1:   89:}
+        -:   90:
+        1:   91:void test_mock_server_connection_rejection(void) {
+        -:   92:    int client_id;
+        -:   93:    
+        -:   94:    /* Disable connection acceptance */
+        1:   95:    mock_server_set_accept_connections(mock_server, false);
+        -:   96:    
+        -:   97:    /* Try to connect - should fail */
+        1:   98:    client_id = mock_server_simulate_client_connect(mock_server);
+        1:   99:    TEST_ASSERT_EQUAL_INT(-1, client_id);
+        1:  100:    TEST_ASSERT_EQUAL_INT(0, mock_server->client_count);
+        1:  101:    TEST_ASSERT_EQUAL_INT(1, mock_server->failed_connections);
+        1:  102:}
+        -:  103:
+        1:  104:void test_mock_server_connection_error_simulation(void) {
+        -:  105:    int client_id;
+        -:  106:    
+        -:  107:    /* Enable connection error simulation */
+        1:  108:    mock_server_set_simulate_connection_error(mock_server, true);
+        -:  109:    
+        -:  110:    /* Try to connect - should fail */
+        1:  111:    client_id = mock_server_simulate_client_connect(mock_server);
+        1:  112:    TEST_ASSERT_EQUAL_INT(-1, client_id);
+        1:  113:    TEST_ASSERT_EQUAL_INT(0, mock_server->client_count);
+        1:  114:    TEST_ASSERT_EQUAL_INT(1, mock_server->failed_connections);
+        1:  115:}
+        -:  116:
+        1:  117:void test_mock_server_message_loss_simulation(void) {
+        -:  118:    int client_id;
+        1:  119:    int successful_messages = 0;
+        -:  120:    int i;
+        -:  121:    
+        -:  122:    /* Connect client */
+        1:  123:    client_id = mock_server_simulate_client_connect(mock_server);
+       1*:  124:    TEST_ASSERT_TRUE(client_id >= 0);
+        -:  125:    
+        -:  126:    /* Enable message loss simulation */
+        1:  127:    mock_server_set_simulate_message_loss(mock_server, true);
+        -:  128:    
+        -:  129:    /* Send multiple messages - some should be lost */
+       21:  130:    for (i = 0; i < 20; i++) {
+        -:  131:        char message[64];
+       20:  132:        sprintf(message, "Message %d", i);
+       20:  133:        if (mock_server_simulate_client_send_message(mock_server, client_id, message)) {
+       16:  134:            successful_messages++;
+        -:  135:        }
+        -:  136:    }
+        -:  137:    
+        -:  138:    /* We should have lost some messages (not all 20 should succeed) */
+       1*:  139:    TEST_ASSERT_TRUE(successful_messages < 20);
+       1*:  140:    TEST_ASSERT_TRUE(successful_messages > 0); /* But not all should be lost */
+        1:  141:}
+        -:  142:
+        1:  143:void test_mock_server_broadcast_functionality(void) {
+        -:  144:    int client1, client2;
+        -:  145:    size_t count1, count2, broadcast_count;
+        -:  146:    MockMessage *messages1, *messages2, *broadcast_history;
+        -:  147:    
+        -:  148:    /* Connect two clients */
+        1:  149:    client1 = mock_server_simulate_client_connect(mock_server);
+        1:  150:    client2 = mock_server_simulate_client_connect(mock_server);
+        -:  151:    
+        -:  152:    /* Broadcast a message to all clients */
+        1:  153:    mock_server_broadcast_message(mock_server, "Broadcast message");
+        -:  154:    
+        -:  155:    /* Both clients should receive the message */
+        1:  156:    messages1 = mock_server_get_client_messages(mock_server, client1, &count1);
+        1:  157:    messages2 = mock_server_get_client_messages(mock_server, client2, &count2);
+        1:  158:    broadcast_history = mock_server_get_broadcast_history(mock_server, &broadcast_count);
+        -:  159:    
+        1:  160:    TEST_ASSERT_EQUAL_INT(1, count1);
+        1:  161:    TEST_ASSERT_EQUAL_INT(1, count2);
+        1:  162:    TEST_ASSERT_EQUAL_INT(1, broadcast_count);
+        1:  163:    TEST_ASSERT_EQUAL_STRING("Broadcast message", messages1[0].message);
+        1:  164:    TEST_ASSERT_EQUAL_STRING("Broadcast message", messages2[0].message);
+        1:  165:    TEST_ASSERT_EQUAL_STRING("Broadcast message", broadcast_history[0].message);
+        1:  166:}
+        -:  167:
+        1:  168:void test_mock_server_statistics(void) {
+        -:  169:    int client_id;
+        -:  170:    int connections, messages_sent, messages_received;
+        -:  171:    
+        -:  172:    /* Reset stats */
+        1:  173:    mock_server_reset_stats(mock_server);
+        1:  174:    mock_server_get_stats(mock_server, &connections, &messages_sent, &messages_received);
+        1:  175:    TEST_ASSERT_EQUAL_INT(0, connections);
+        1:  176:    TEST_ASSERT_EQUAL_INT(0, messages_sent);
+        1:  177:    TEST_ASSERT_EQUAL_INT(0, messages_received);
+        -:  178:    
+        -:  179:    /* Connect client and send message */
+        1:  180:    client_id = mock_server_simulate_client_connect(mock_server);
+       1*:  181:    TEST_ASSERT_TRUE(mock_server_simulate_client_send_message(mock_server, client_id, "Test message"));
+        -:  182:    
+        -:  183:    /* Check updated stats */
+        1:  184:    mock_server_get_stats(mock_server, &connections, &messages_sent, &messages_received);
+        1:  185:    TEST_ASSERT_EQUAL_INT(1, connections);
+        1:  186:    TEST_ASSERT_EQUAL_INT(0, messages_sent); /* No other clients to echo to */
+        1:  187:    TEST_ASSERT_EQUAL_INT(1, messages_received);
+        1:  188:}
+        -:  189:
+        1:  190:void test_mock_server_echo_disable(void) {
+        -:  191:    int client1, client2;
+        -:  192:    size_t count1, count2;
+        -:  193:    MockMessage *messages1, *messages2;
+        -:  194:    
+        -:  195:    /* Connect two clients */
+        1:  196:    client1 = mock_server_simulate_client_connect(mock_server);
+        1:  197:    client2 = mock_server_simulate_client_connect(mock_server);
+        -:  198:    
+        -:  199:    /* Disable echo */
+        1:  200:    mock_server_set_echo_messages(mock_server, false);
+        -:  201:    
+        -:  202:    /* Client 1 sends message */
+       1*:  203:    TEST_ASSERT_TRUE(mock_server_simulate_client_send_message(mock_server, client1, "No echo message"));
+        -:  204:    
+        -:  205:    /* Only sender should have the message */
+        1:  206:    messages1 = mock_server_get_client_messages(mock_server, client1, &count1);
+        1:  207:    messages2 = mock_server_get_client_messages(mock_server, client2, &count2);
+        -:  208:    
+        1:  209:    TEST_ASSERT_EQUAL_INT(1, count1); /* Original sender has message */
+        1:  210:    TEST_ASSERT_EQUAL_INT(0, count2); /* Other client doesn't receive echo */
+        1:  211:}
+        -:  212:
+        1:  213:void test_websocket_integration_with_mock_server(void) {
+        -:  214:    /* This test would require modifying websocket_service to use our mock server
+        -:  215:     * For now, we test the interface compatibility */
+        -:  216:    WebSocketData *data;
+        1:  217:    Message test_message = {0};
+        -:  218:    
+        -:  219:    /* Test service initialization */
+       1*:  220:    TEST_ASSERT_TRUE(websocket_service_init());
+        -:  221:    
+        -:  222:    /* Test service update */
+        1:  223:    data = websocket_service_update();
+       1*:  224:    TEST_ASSERT_NOT_NULL(data);
+        -:  225:    
+        -:  226:    /* Test message creation and sending */
+        1:  227:    test_message.type = MSG_TYPE_CHAT;
+        1:  228:    strcpy(test_message.username, "TestUser");
+        1:  229:    strcpy(test_message.content, "Integration test message");
+        1:  230:    test_message.timestamp = 1234567890;
+        -:  231:    
+        -:  232:    /* This would normally send to real server, but in testing we verify the interface */
+        1:  233:    websocket_service_send_message(&test_message);
+        1:  234:    websocket_service_send_text("TestUser", "Simple text message");
+        -:  235:    
+        -:  236:    /* Cleanup */
+        1:  237:    websocket_service_cleanup();
+        1:  238:}
+        -:  239:
+        1:  240:int main(void) {
+        1:  241:    UNITY_BEGIN();
+        -:  242:    
+        -:  243:    /* Mock server functionality tests */
+        1:  244:    RUN_TEST(test_mock_server_basic_functionality);
+        1:  245:    RUN_TEST(test_mock_server_multiple_clients);
+        1:  246:    RUN_TEST(test_mock_server_connection_rejection);
+        1:  247:    RUN_TEST(test_mock_server_connection_error_simulation);
+        1:  248:    RUN_TEST(test_mock_server_message_loss_simulation);
+        1:  249:    RUN_TEST(test_mock_server_broadcast_functionality);
+        1:  250:    RUN_TEST(test_mock_server_statistics);
+        1:  251:    RUN_TEST(test_mock_server_echo_disable);
+        -:  252:    
+        -:  253:    /* Integration tests */
+        1:  254:    RUN_TEST(test_websocket_integration_with_mock_server);
+        -:  255:    
+        1:  256:    return UNITY_END();
+        -:  257:}

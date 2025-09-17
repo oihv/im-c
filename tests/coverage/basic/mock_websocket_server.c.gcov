@@ -1,0 +1,370 @@
+        -:    0:Source:/home/nikolas/Programming/repos/im-c/tests/integration/mock_websocket_server.c
+        -:    0:Graph:build/CMakeFiles/test_websocket_integration_advanced.dir/integration/mock_websocket_server.c.gcno
+        -:    0:Data:build/CMakeFiles/test_websocket_integration_advanced.dir/integration/mock_websocket_server.c.gcda
+        -:    0:Runs:1
+        -:    1:#include "mock_websocket_server.h"
+        -:    2:#include <stdlib.h>
+        -:    3:#include <string.h>
+        -:    4:#include <stdio.h>
+        -:    5:#include <time.h>
+        -:    6:#include <unistd.h>
+        -:    7:#include <sys/time.h>
+        -:    8:
+        9:    9:MockWebSocketServer* mock_server_create(int port) {
+        9:   10:    MockWebSocketServer *server = malloc(sizeof(MockWebSocketServer));
+       9*:   11:    if (!server) return NULL;
+        -:   12:    
+        9:   13:    memset(server, 0, sizeof(MockWebSocketServer));
+        9:   14:    server->port = port;
+        9:   15:    server->running = false;
+        9:   16:    server->should_accept_connections = true;
+        9:   17:    server->should_echo_messages = true;
+        9:   18:    server->should_simulate_connection_error = false;
+        9:   19:    server->should_simulate_message_loss = false;
+        -:   20:    
+        -:   21:    // Initialize clients
+       99:   22:    for (int i = 0; i < MOCK_MAX_CLIENTS; i++) {
+       90:   23:        server->clients[i].client_id = i;
+       90:   24:        server->clients[i].connected = false;
+       90:   25:        server->clients[i].max_messages = 100;
+       90:   26:        server->clients[i].received_messages = malloc(sizeof(MockMessage) * server->clients[i].max_messages);
+       90:   27:        server->clients[i].message_count = 0;
+        -:   28:    }
+        -:   29:    
+        -:   30:    // Initialize broadcast history
+        9:   31:    server->max_broadcast_history = 200;
+        9:   32:    server->broadcast_history = malloc(sizeof(MockMessage) * server->max_broadcast_history);
+        9:   33:    server->broadcast_count = 0;
+        -:   34:    
+        9:   35:    return server;
+        -:   36:}
+        -:   37:
+        9:   38:void mock_server_destroy(MockWebSocketServer *server) {
+       9*:   39:    if (!server) return;
+        -:   40:    
+        -:   41:    // Clean up client message buffers
+       99:   42:    for (int i = 0; i < MOCK_MAX_CLIENTS; i++) {
+       90:   43:        if (server->clients[i].received_messages) {
+       90:   44:            free(server->clients[i].received_messages);
+        -:   45:        }
+        -:   46:    }
+        -:   47:    
+        -:   48:    // Clean up broadcast history
+        9:   49:    if (server->broadcast_history) {
+        9:   50:        free(server->broadcast_history);
+        -:   51:    }
+        -:   52:    
+        9:   53:    free(server);
+        -:   54:}
+        -:   55:
+        9:   56:bool mock_server_start(MockWebSocketServer *server) {
+       9*:   57:    if (!server || server->running) return false;
+        -:   58:    
+        9:   59:    server->running = true;
+        9:   60:    server->connection_attempts = 0;
+        9:   61:    server->successful_connections = 0;
+        9:   62:    server->failed_connections = 0;
+        9:   63:    server->messages_sent = 0;
+        9:   64:    server->messages_received = 0;
+        -:   65:    
+        9:   66:    return true;
+        -:   67:}
+        -:   68:
+        9:   69:void mock_server_stop(MockWebSocketServer *server) {
+       9*:   70:    if (!server) return;
+        -:   71:    
+        9:   72:    server->running = false;
+        -:   73:    
+        -:   74:    // Disconnect all clients
+       99:   75:    for (int i = 0; i < MOCK_MAX_CLIENTS; i++) {
+       90:   76:        if (server->clients[i].connected) {
+        8:   77:            server->clients[i].connected = false;
+        -:   78:        }
+        -:   79:    }
+        9:   80:    server->client_count = 0;
+        -:   81:}
+        -:   82:
+    #####:   83:void mock_server_update(MockWebSocketServer *server) {
+    #####:   84:    if (!server || !server->running) return;
+        -:   85:    
+        -:   86:    // Simulate server processing - in a real implementation this would
+        -:   87:    // handle network events, but for mocking we just update timestamps
+        -:   88:    // and process any queued operations
+    #####:   89:    usleep(1000); // 1ms delay to simulate processing time
+        -:   90:}
+        -:   91:
+       11:   92:int mock_server_simulate_client_connect(MockWebSocketServer *server) {
+        -:   93:    int i;
+      11*:   94:    if (!server || !server->running) return -1;
+        -:   95:    
+       11:   96:    server->connection_attempts++;
+        -:   97:    
+       11:   98:    if (!server->should_accept_connections) {
+        1:   99:        server->failed_connections++;
+        1:  100:        return -1;
+        -:  101:    }
+        -:  102:    
+       10:  103:    if (server->should_simulate_connection_error) {
+        1:  104:        server->failed_connections++;
+        1:  105:        return -1;
+        -:  106:    }
+        -:  107:    
+        -:  108:    /* Find available client slot */
+       12:  109:    for (i = 0; i < MOCK_MAX_CLIENTS; i++) {
+       12:  110:        if (!server->clients[i].connected) {
+        9:  111:            server->clients[i].connected = true;
+        9:  112:            server->clients[i].message_count = 0;
+        9:  113:            server->client_count++;
+        9:  114:            server->successful_connections++;
+        9:  115:            return i;
+        -:  116:        }
+        -:  117:    }
+        -:  118:    
+    #####:  119:    server->failed_connections++;
+    #####:  120:    return -1; /* No available slots */
+        -:  121:}
+        -:  122:
+        1:  123:void mock_server_simulate_client_disconnect(MockWebSocketServer *server, int client_id) {
+       1*:  124:    if (!server || client_id < 0 || client_id >= MOCK_MAX_CLIENTS) return;
+        -:  125:    
+        1:  126:    if (server->clients[client_id].connected) {
+        1:  127:        server->clients[client_id].connected = false;
+        1:  128:        server->client_count--;
+        -:  129:    }
+        -:  130:}
+        -:  131:
+       24:  132:bool mock_server_simulate_client_send_message(MockWebSocketServer *server, int client_id, const char *message) {
+        -:  133:    MockClient *client;
+        -:  134:    MockMessage *msg;
+        -:  135:    struct timeval tv;
+        -:  136:    int i;
+        -:  137:    
+      24*:  138:    if (!server || !message || client_id < 0 || client_id >= MOCK_MAX_CLIENTS) return false;
+      24*:  139:    if (!server->clients[client_id].connected) return false;
+        -:  140:    
+       24:  141:    if (server->should_simulate_message_loss) {
+        -:  142:        /* Randomly drop 20% of messages */
+       20:  143:        if (rand() % 5 == 0) return false;
+        -:  144:    }
+        -:  145:    
+       20:  146:    client = &server->clients[client_id];
+        -:  147:    
+        -:  148:    /* Store received message */
+       20:  149:    if (client->message_count < client->max_messages) {
+       20:  150:        msg = &client->received_messages[client->message_count];
+       20:  151:        strncpy(msg->message, message, MOCK_MAX_MESSAGE_SIZE - 1);
+       20:  152:        msg->message[MOCK_MAX_MESSAGE_SIZE - 1] = '\0';
+       20:  153:        msg->length = strlen(msg->message);
+        -:  154:        
+       20:  155:        gettimeofday(&tv, NULL);
+       20:  156:        msg->timestamp = tv.tv_sec * 1000000ULL + tv.tv_usec;
+        -:  157:        
+       20:  158:        client->message_count++;
+       20:  159:        server->messages_received++;
+        -:  160:    }
+        -:  161:    
+        -:  162:    /* Echo message to all other clients if echo is enabled */
+       20:  163:    if (server->should_echo_messages) {
+      209:  164:        for (i = 0; i < MOCK_MAX_CLIENTS; i++) {
+      190:  165:            if (i != client_id && server->clients[i].connected) {
+        1:  166:                MockClient *other_client = &server->clients[i];
+        1:  167:                if (other_client->message_count < other_client->max_messages) {
+        1:  168:                    MockMessage *echo_msg = &other_client->received_messages[other_client->message_count];
+        1:  169:                    strncpy(echo_msg->message, message, MOCK_MAX_MESSAGE_SIZE - 1);
+        1:  170:                    echo_msg->message[MOCK_MAX_MESSAGE_SIZE - 1] = '\0';
+        1:  171:                    echo_msg->length = strlen(echo_msg->message);
+        -:  172:                    
+        1:  173:                    gettimeofday(&tv, NULL);
+        1:  174:                    echo_msg->timestamp = tv.tv_sec * 1000000ULL + tv.tv_usec;
+        -:  175:                    
+        1:  176:                    other_client->message_count++;
+        1:  177:                    server->messages_sent++;
+        -:  178:                }
+        -:  179:            }
+        -:  180:        }
+        -:  181:    }
+        -:  182:    
+        -:  183:    /* Add to broadcast history */
+       20:  184:    if (server->broadcast_count < server->max_broadcast_history) {
+       20:  185:        MockMessage *broadcast_msg = &server->broadcast_history[server->broadcast_count];
+       20:  186:        strncpy(broadcast_msg->message, message, MOCK_MAX_MESSAGE_SIZE - 1);
+       20:  187:        broadcast_msg->message[MOCK_MAX_MESSAGE_SIZE - 1] = '\0';
+       20:  188:        broadcast_msg->length = strlen(broadcast_msg->message);
+        -:  189:        
+       20:  190:        gettimeofday(&tv, NULL);
+       20:  191:        broadcast_msg->timestamp = tv.tv_sec * 1000000ULL + tv.tv_usec;
+        -:  192:        
+       20:  193:        server->broadcast_count++;
+        -:  194:    }
+        -:  195:    
+       20:  196:    return true;
+        -:  197:}
+        -:  198:
+        1:  199:void mock_server_set_accept_connections(MockWebSocketServer *server, bool accept) {
+        1:  200:    if (server) {
+        1:  201:        server->should_accept_connections = accept;
+        -:  202:    }
+        1:  203:}
+        -:  204:
+        1:  205:void mock_server_set_echo_messages(MockWebSocketServer *server, bool echo) {
+        1:  206:    if (server) {
+        1:  207:        server->should_echo_messages = echo;
+        -:  208:    }
+        1:  209:}
+        -:  210:
+        1:  211:void mock_server_set_simulate_connection_error(MockWebSocketServer *server, bool simulate) {
+        1:  212:    if (server) {
+        1:  213:        server->should_simulate_connection_error = simulate;
+        -:  214:    }
+        1:  215:}
+        -:  216:
+        1:  217:void mock_server_set_simulate_message_loss(MockWebSocketServer *server, bool simulate) {
+        1:  218:    if (server) {
+        1:  219:        server->should_simulate_message_loss = simulate;
+        -:  220:    }
+        1:  221:}
+        -:  222:
+        1:  223:void mock_server_inject_message(MockWebSocketServer *server, const char *message) {
+        -:  224:    int i;
+        -:  225:    MockClient *client;
+        -:  226:    MockMessage *msg;
+        -:  227:    struct timeval tv;
+        -:  228:    
+       1*:  229:    if (!server || !message) return;
+        -:  230:    
+        -:  231:    /* Send message to all connected clients */
+       11:  232:    for (i = 0; i < MOCK_MAX_CLIENTS; i++) {
+       10:  233:        if (server->clients[i].connected) {
+        2:  234:            client = &server->clients[i];
+        2:  235:            if (client->message_count < client->max_messages) {
+        2:  236:                msg = &client->received_messages[client->message_count];
+        2:  237:                strncpy(msg->message, message, MOCK_MAX_MESSAGE_SIZE - 1);
+        2:  238:                msg->message[MOCK_MAX_MESSAGE_SIZE - 1] = '\0';
+        2:  239:                msg->length = strlen(msg->message);
+        -:  240:                
+        2:  241:                gettimeofday(&tv, NULL);
+        2:  242:                msg->timestamp = tv.tv_sec * 1000000ULL + tv.tv_usec;
+        -:  243:                
+        2:  244:                client->message_count++;
+        2:  245:                server->messages_sent++;
+        -:  246:            }
+        -:  247:        }
+        -:  248:    }
+        -:  249:}
+        -:  250:
+        1:  251:void mock_server_broadcast_message(MockWebSocketServer *server, const char *message) {
+        -:  252:    struct timeval tv;
+        -:  253:    MockMessage *broadcast_msg;
+        -:  254:    
+       1*:  255:    if (!server || !message) return;
+        -:  256:    
+        -:  257:    /* Send to all clients via inject_message */
+        1:  258:    mock_server_inject_message(server, message);
+        -:  259:    
+        -:  260:    /* Record in broadcast history */
+        1:  261:    if (server->broadcast_count < server->max_broadcast_history) {
+        1:  262:        broadcast_msg = &server->broadcast_history[server->broadcast_count];
+        1:  263:        strncpy(broadcast_msg->message, message, MOCK_MAX_MESSAGE_SIZE - 1);
+        1:  264:        broadcast_msg->message[MOCK_MAX_MESSAGE_SIZE - 1] = '\0';
+        1:  265:        broadcast_msg->length = strlen(broadcast_msg->message);
+        -:  266:        
+        1:  267:        gettimeofday(&tv, NULL);
+        1:  268:        broadcast_msg->timestamp = tv.tv_sec * 1000000ULL + tv.tv_usec;
+        -:  269:        
+        1:  270:        server->broadcast_count++;
+        -:  271:    }
+        -:  272:}
+        -:  273:
+    #####:  274:bool mock_server_wait_for_client_connection(MockWebSocketServer *server, int timeout_ms) {
+        -:  275:    int initial_connections;
+        -:  276:    int elapsed;
+        -:  277:    
+    #####:  278:    if (!server) return false;
+        -:  279:    
+    #####:  280:    initial_connections = server->successful_connections;
+    #####:  281:    elapsed = 0;
+        -:  282:    
+    #####:  283:    while (elapsed < timeout_ms) {
+    #####:  284:        mock_server_update(server);
+    #####:  285:        if (server->successful_connections > initial_connections) {
+    #####:  286:            return true;
+        -:  287:        }
+    #####:  288:        usleep(1000); /* 1ms */
+    #####:  289:        elapsed++;
+        -:  290:    }
+        -:  291:    
+    #####:  292:    return false;
+        -:  293:}
+        -:  294:
+    #####:  295:bool mock_server_wait_for_message(MockWebSocketServer *server, int client_id, const char *expected_message, int timeout_ms) {
+        -:  296:    int elapsed;
+        -:  297:    MockClient *client;
+        -:  298:    size_t i;
+        -:  299:    
+    #####:  300:    if (!server || client_id < 0 || client_id >= MOCK_MAX_CLIENTS || !expected_message) return false;
+    #####:  301:    if (!server->clients[client_id].connected) return false;
+        -:  302:    
+    #####:  303:    elapsed = 0;
+    #####:  304:    client = &server->clients[client_id];
+        -:  305:    
+    #####:  306:    while (elapsed < timeout_ms) {
+    #####:  307:        mock_server_update(server);
+        -:  308:        
+        -:  309:        /* Check if we have new messages */
+    #####:  310:        for (i = 0; i < client->message_count; i++) {
+    #####:  311:            if (strstr(client->received_messages[i].message, expected_message) != NULL) {
+    #####:  312:                return true;
+        -:  313:            }
+        -:  314:        }
+        -:  315:        
+    #####:  316:        usleep(1000); /* 1ms */
+    #####:  317:        elapsed++;
+        -:  318:    }
+        -:  319:    
+    #####:  320:    return false;
+        -:  321:}
+        -:  322:
+        7:  323:MockMessage* mock_server_get_client_messages(MockWebSocketServer *server, int client_id, size_t *count) {
+        7:  324:    if (!server || client_id < 0 || client_id >= MOCK_MAX_CLIENTS || !count) {
+    #####:  325:        if (count) *count = 0;
+    #####:  326:        return NULL;
+        -:  327:    }
+        -:  328:    
+        7:  329:    *count = server->clients[client_id].message_count;
+        7:  330:    return server->clients[client_id].received_messages;
+        -:  331:}
+        -:  332:
+        1:  333:MockMessage* mock_server_get_broadcast_history(MockWebSocketServer *server, size_t *count) {
+        1:  334:    if (!server || !count) {
+    #####:  335:        if (count) *count = 0;
+    #####:  336:        return NULL;
+        -:  337:    }
+        -:  338:    
+        1:  339:    *count = server->broadcast_count;
+        1:  340:    return server->broadcast_history;
+        -:  341:}
+        -:  342:
+        1:  343:void mock_server_reset_stats(MockWebSocketServer *server) {
+       1*:  344:    if (!server) return;
+        -:  345:    
+        1:  346:    server->connection_attempts = 0;
+        1:  347:    server->successful_connections = 0;
+        1:  348:    server->failed_connections = 0;
+        1:  349:    server->messages_sent = 0;
+        1:  350:    server->messages_received = 0;
+        -:  351:    
+        -:  352:    // Reset client message counts
+       11:  353:    for (int i = 0; i < MOCK_MAX_CLIENTS; i++) {
+       10:  354:        server->clients[i].message_count = 0;
+        -:  355:    }
+        -:  356:    
+        1:  357:    server->broadcast_count = 0;
+        -:  358:}
+        -:  359:
+        2:  360:void mock_server_get_stats(MockWebSocketServer *server, int *connections, int *messages_sent, int *messages_received) {
+       2*:  361:    if (!server) return;
+        -:  362:    
+        2:  363:    if (connections) *connections = server->successful_connections;
+        2:  364:    if (messages_sent) *messages_sent = server->messages_sent;
+        2:  365:    if (messages_received) *messages_received = server->messages_received;
+        -:  366:}

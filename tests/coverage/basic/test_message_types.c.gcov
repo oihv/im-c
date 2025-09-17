@@ -1,0 +1,169 @@
+        -:    0:Source:/home/nikolas/Programming/repos/im-c/tests/unit/test_message_types.c
+        -:    0:Graph:build/CMakeFiles/test_message_types.dir/unit/test_message_types.c.gcno
+        -:    0:Data:build/CMakeFiles/test_message_types.dir/unit/test_message_types.c.gcda
+        -:    0:Runs:2
+        -:    1:#include "unity.h"
+        -:    2:#include "message_types.h"
+        -:    3:#include <string.h>
+        -:    4:#include <stdlib.h>
+        -:    5:
+       16:    6:void setUp(void) {
+       16:    7:}
+        -:    8:
+       16:    9:void tearDown(void) {
+       16:   10:}
+        -:   11:
+        2:   12:void test_message_parse_from_string_valid_chat_message(void) {
+        2:   13:    const char* pipe_delimited_str = "0|1234567890|test_user|Hello, World!|";
+        -:   14:    Message message;
+        -:   15:    
+        2:   16:    bool result = message_parse_from_string(pipe_delimited_str, &message);
+        -:   17:    
+       2*:   18:    TEST_ASSERT_TRUE(result);
+        2:   19:    TEST_ASSERT_EQUAL_UINT64(1234567890, message.timestamp);
+        2:   20:    TEST_ASSERT_EQUAL_STRING("test_user", message.username);
+        2:   21:    TEST_ASSERT_EQUAL_INT(MSG_TYPE_CHAT, message.type);
+        2:   22:    TEST_ASSERT_EQUAL_STRING("Hello, World!", message.content);
+        2:   23:}
+        -:   24:
+        2:   25:void test_message_parse_from_string_invalid_format(void) {
+        2:   26:    const char* invalid_format = "0|1234567890|test_user"; // Missing required fields
+        -:   27:    Message message;
+        -:   28:    
+        2:   29:    bool result = message_parse_from_string(invalid_format, &message);
+        -:   30:    
+       2*:   31:    TEST_ASSERT_FALSE(result);
+        2:   32:}
+        -:   33:
+        2:   34:void test_message_serialize_to_string(void) {
+        2:   35:    Message message = {
+        -:   36:        .timestamp = 1234567890,
+        -:   37:        .type = MSG_TYPE_CHAT
+        -:   38:    };
+        2:   39:    strcpy(message.username, "test_user");
+        2:   40:    strcpy(message.content, "Hello, World!");
+        2:   41:    strcpy(message.metadata, "");
+        -:   42:    
+        -:   43:    char buffer[1024];
+        2:   44:    int result = message_serialize_to_string(&message, buffer, sizeof(buffer));
+        -:   45:    
+        2:   46:    TEST_ASSERT_GREATER_THAN(0, result);
+       2*:   47:    TEST_ASSERT_TRUE(strstr(buffer, "test_user") != NULL);
+       2*:   48:    TEST_ASSERT_TRUE(strstr(buffer, "Hello, World!") != NULL);
+       2*:   49:    TEST_ASSERT_TRUE(strstr(buffer, "1234567890") != NULL);
+        2:   50:}
+        -:   51:
+        2:   52:void test_message_list_create_and_destroy(void) {
+        2:   53:    MessageList* list = message_list_create(10);
+        -:   54:    
+       2*:   55:    TEST_ASSERT_NOT_NULL(list);
+        2:   56:    TEST_ASSERT_EQUAL_INT(0, list->count);
+        2:   57:    TEST_ASSERT_EQUAL_INT(10, list->max_messages);
+       2*:   58:    TEST_ASSERT_NULL(list->head);
+       2*:   59:    TEST_ASSERT_NULL(list->tail);
+        -:   60:    
+        2:   61:    message_list_destroy(list);
+        2:   62:}
+        -:   63:
+        2:   64:void test_message_list_add_single_message(void) {
+        2:   65:    MessageList* list = message_list_create(10);
+        2:   66:    Message message = {
+        -:   67:        .timestamp = 1234567890,
+        -:   68:        .type = MSG_TYPE_CHAT
+        -:   69:    };
+        2:   70:    strcpy(message.username, "test_user");
+        2:   71:    strcpy(message.content, "Test message");
+        2:   72:    strcpy(message.metadata, "");
+        -:   73:    
+        2:   74:    bool result = message_list_add(list, &message);
+        -:   75:    
+       2*:   76:    TEST_ASSERT_TRUE(result);
+        2:   77:    TEST_ASSERT_EQUAL_INT(1, list->count);
+       2*:   78:    TEST_ASSERT_NOT_NULL(list->head);
+       2*:   79:    TEST_ASSERT_NOT_NULL(list->tail);
+        2:   80:    TEST_ASSERT_EQUAL_PTR(list->head, list->tail);
+        2:   81:    TEST_ASSERT_EQUAL_STRING("test_user", list->head->message.username);
+        -:   82:    
+        2:   83:    message_list_destroy(list);
+        2:   84:}
+        -:   85:
+        2:   86:void test_message_list_add_multiple_messages(void) {
+        2:   87:    MessageList* list = message_list_create(10);
+        -:   88:    
+       12:   89:    for (int i = 0; i < 5; i++) {
+       10:   90:        Message message = {
+       10:   91:            .timestamp = 1234567890 + i,
+        -:   92:            .type = MSG_TYPE_CHAT
+        -:   93:        };
+       10:   94:        sprintf(message.username, "user_%d", i);
+       10:   95:        sprintf(message.content, "message_%d", i);
+       10:   96:        strcpy(message.metadata, "");
+        -:   97:        
+       10:   98:        bool result = message_list_add(list, &message);
+      10*:   99:        TEST_ASSERT_TRUE(result);
+        -:  100:    }
+        -:  101:    
+        2:  102:    TEST_ASSERT_EQUAL_INT(5, list->count);
+       2*:  103:    TEST_ASSERT_NOT_NULL(list->head);
+       2*:  104:    TEST_ASSERT_NOT_NULL(list->tail);
+        -:  105:    
+        2:  106:    message_list_destroy(list);
+        2:  107:}
+        -:  108:
+        2:  109:void test_message_list_overflow_protection(void) {
+        2:  110:    MessageList* list = message_list_create(3);
+        -:  111:    
+       12:  112:    for (int i = 0; i < 5; i++) {
+       10:  113:        Message message = {
+       10:  114:            .timestamp = 1234567890 + i,
+        -:  115:            .type = MSG_TYPE_CHAT
+        -:  116:        };
+       10:  117:        sprintf(message.username, "user_%d", i);
+       10:  118:        sprintf(message.content, "message_%d", i);
+       10:  119:        strcpy(message.metadata, "");
+        -:  120:        
+       10:  121:        bool result = message_list_add(list, &message);
+      10*:  122:        TEST_ASSERT_TRUE(result);
+        -:  123:    }
+        -:  124:    
+        2:  125:    TEST_ASSERT_EQUAL_INT(3, list->count);
+        -:  126:    
+        2:  127:    message_list_destroy(list);
+        2:  128:}
+        -:  129:
+        2:  130:void test_message_list_clear(void) {
+        2:  131:    MessageList* list = message_list_create(10);
+        -:  132:    
+        2:  133:    Message message = {
+        -:  134:        .timestamp = 1234567890,
+        -:  135:        .type = MSG_TYPE_CHAT
+        -:  136:    };
+        2:  137:    strcpy(message.username, "test_user");
+        2:  138:    strcpy(message.content, "Test message");
+        2:  139:    strcpy(message.metadata, "");
+        -:  140:    
+        2:  141:    message_list_add(list, &message);
+        2:  142:    TEST_ASSERT_EQUAL_INT(1, list->count);
+        -:  143:    
+        2:  144:    message_list_clear(list);
+        2:  145:    TEST_ASSERT_EQUAL_INT(0, list->count);
+       2*:  146:    TEST_ASSERT_NULL(list->head);
+       2*:  147:    TEST_ASSERT_NULL(list->tail);
+        -:  148:    
+        2:  149:    message_list_destroy(list);
+        2:  150:}
+        -:  151:
+        2:  152:int main(void) {
+        2:  153:    UNITY_BEGIN();
+        -:  154:    
+        2:  155:    RUN_TEST(test_message_parse_from_string_valid_chat_message);
+        2:  156:    RUN_TEST(test_message_parse_from_string_invalid_format);
+        2:  157:    RUN_TEST(test_message_serialize_to_string);
+        2:  158:    RUN_TEST(test_message_list_create_and_destroy);
+        2:  159:    RUN_TEST(test_message_list_add_single_message);
+        2:  160:    RUN_TEST(test_message_list_add_multiple_messages);
+        2:  161:    RUN_TEST(test_message_list_overflow_protection);
+        2:  162:    RUN_TEST(test_message_list_clear);
+        -:  163:    
+        2:  164:    return UNITY_END();
+        -:  165:}

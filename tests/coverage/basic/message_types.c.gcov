@@ -1,0 +1,130 @@
+        -:    0:Source:/home/nikolas/Programming/repos/im-c/frontend/network/message_types.c
+        -:    0:Graph:build/CMakeFiles/test_websocket_integration_advanced.dir/home/nikolas/Programming/repos/im-c/frontend/network/message_types.c.gcno
+        -:    0:Data:build/CMakeFiles/test_websocket_integration_advanced.dir/home/nikolas/Programming/repos/im-c/frontend/network/message_types.c.gcda
+        -:    0:Runs:1
+        -:    1:#include "message_types.h"
+        -:    2:#include <stdio.h>
+        -:    3:#include <stdlib.h>
+        -:    4:#include <string.h>
+        -:    5:
+    #####:    6:bool message_parse_from_string(const char* raw_message, Message* message) {
+    #####:    7:    if (!raw_message || !message) return false;
+        -:    8:    
+        -:    9:    // Simple format: "TYPE|TIMESTAMP|USERNAME|CONTENT|METADATA"
+    #####:   10:    char* buffer = strdup(raw_message);
+        -:   11:    char* token;
+        -:   12:    char* saveptr;
+    #####:   13:    int field = 0;
+        -:   14:    
+    #####:   15:    token = strtok_r(buffer, "|", &saveptr);
+    #####:   16:    while (token && field < 5) {
+    #####:   17:        switch (field) {
+    #####:   18:            case 0: // Type
+    #####:   19:                message->type = (MessageType)atoi(token);
+    #####:   20:                break;
+    #####:   21:            case 1: // Timestamp
+    #####:   22:                message->timestamp = strtoull(token, NULL, 10);
+    #####:   23:                break;
+    #####:   24:            case 2: // Username
+    #####:   25:                strncpy(message->username, token, MAX_USERNAME_LENGTH - 1);
+    #####:   26:                message->username[MAX_USERNAME_LENGTH - 1] = '\0';
+    #####:   27:                break;
+    #####:   28:            case 3: // Content
+    #####:   29:                strncpy(message->content, token, MAX_MESSAGE_LENGTH - 1);
+    #####:   30:                message->content[MAX_MESSAGE_LENGTH - 1] = '\0';
+    #####:   31:                break;
+    #####:   32:            case 4: // Metadata
+    #####:   33:                strncpy(message->metadata, token, MAX_METADATA_LENGTH - 1);
+    #####:   34:                message->metadata[MAX_METADATA_LENGTH - 1] = '\0';
+    #####:   35:                break;
+        -:   36:        }
+    #####:   37:        token = strtok_r(NULL, "|", &saveptr);
+    #####:   38:        field++;
+        -:   39:    }
+        -:   40:    
+    #####:   41:    free(buffer);
+    #####:   42:    return field >= 4; // At minimum we need type, timestamp, username, content
+        -:   43:}
+        -:   44:
+    #####:   45:int message_serialize_to_string(const Message* message, char* buffer, int buffer_size) {
+    #####:   46:    if (!message || !buffer) return -1;
+        -:   47:    
+    #####:   48:    return snprintf(buffer, buffer_size, "%d|%llu|%s|%s|%s",
+    #####:   49:                   (int)message->type,
+    #####:   50:                   (unsigned long long)message->timestamp,
+    #####:   51:                   message->username,
+    #####:   52:                   message->content,
+    #####:   53:                   message->metadata);
+        -:   54:}
+        -:   55:
+       10:   56:MessageList* message_list_create(int max_messages) {
+       10:   57:    MessageList* list = malloc(sizeof(MessageList));
+      10*:   58:    if (!list) return NULL;
+        -:   59:    
+       10:   60:    list->head = NULL;
+       10:   61:    list->tail = NULL;
+       10:   62:    list->count = 0;
+      10*:   63:    list->max_messages = max_messages > 0 ? max_messages : 100; // Default limit
+        -:   64:    
+       10:   65:    return list;
+        -:   66:}
+        -:   67:
+       10:   68:void message_list_destroy(MessageList* list) {
+      10*:   69:    if (!list) return;
+        -:   70:    
+       10:   71:    message_list_clear(list);
+       10:   72:    free(list);
+        -:   73:}
+        -:   74:
+    #####:   75:bool message_list_add(MessageList* list, const Message* message) {
+    #####:   76:    if (!list || !message) return false;
+        -:   77:    
+    #####:   78:    MessageNode* new_node = malloc(sizeof(MessageNode));
+    #####:   79:    if (!new_node) return false;
+        -:   80:    
+    #####:   81:    new_node->message = *message;
+    #####:   82:    new_node->next = NULL;
+        -:   83:    
+        -:   84:    // Add to end of list
+    #####:   85:    if (list->tail) {
+    #####:   86:        list->tail->next = new_node;
+        -:   87:    } else {
+    #####:   88:        list->head = new_node;
+        -:   89:    }
+    #####:   90:    list->tail = new_node;
+    #####:   91:    list->count++;
+        -:   92:    
+        -:   93:    // Remove oldest messages if we exceed limit
+    #####:   94:    while (list->count > list->max_messages && list->head) {
+    #####:   95:        MessageNode* old_head = list->head;
+    #####:   96:        list->head = list->head->next;
+    #####:   97:        if (!list->head) {
+    #####:   98:            list->tail = NULL;
+        -:   99:        }
+    #####:  100:        free(old_head);
+    #####:  101:        list->count--;
+        -:  102:    }
+        -:  103:    
+    #####:  104:    return true;
+        -:  105:}
+        -:  106:
+    #####:  107:MessageNode* message_list_get_latest(MessageList* list, int count) {
+    #####:  108:    if (!list || count <= 0) return NULL;
+        -:  109:    
+        -:  110:    // For simplicity, return from head (could optimize with reverse traversal)
+    #####:  111:    return list->head;
+        -:  112:}
+        -:  113:
+       10:  114:void message_list_clear(MessageList* list) {
+      10*:  115:    if (!list) return;
+        -:  116:    
+       10:  117:    while (list->head) {
+    #####:  118:        MessageNode* current = list->head;
+    #####:  119:        list->head = list->head->next;
+    #####:  120:        free(current);
+        -:  121:    }
+        -:  122:    
+       10:  123:    list->head = NULL;
+       10:  124:    list->tail = NULL;
+       10:  125:    list->count = 0;
+        -:  126:}
