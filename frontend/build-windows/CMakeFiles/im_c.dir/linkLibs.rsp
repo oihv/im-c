@@ -1,1 +1,0 @@
-  -L"/home/nikolas/Programming/repos/im-c/frontend/raylib"  raylib/raylib/libraylib.a "/usr/x86_64-w64-mingw32/lib/libwebsockets_static.a" -lws2_32 -lwinmm -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 -lopengl32 -lglu32 -lwinmm -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 

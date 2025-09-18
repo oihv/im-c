@@ -1,7 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"/home/nikolas/Programming/repos/im-c/backend/build-linux-test/cmake_install.cmake"
-	],
-	"Parallel" : false
-}

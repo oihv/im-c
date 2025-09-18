@@ -1,3 +1,0 @@
-/home/nikolas/Programming/repos/im-c/backend/build-linux-test/CMakeFiles/lws-minimal-ws-server.dir
-/home/nikolas/Programming/repos/im-c/backend/build-linux-test/CMakeFiles/edit_cache.dir
-/home/nikolas/Programming/repos/im-c/backend/build-linux-test/CMakeFiles/rebuild_cache.dir
