@@ -1,0 +1,3 @@
+/usr/bin/cmake -E rm -f CMakeFiles/lws-minimal-ws-server.dir/objects.a
+/usr/bin/x86_64-w64-mingw32-ar qc CMakeFiles/lws-minimal-ws-server.dir/objects.a @CMakeFiles/lws-minimal-ws-server.dir/objects1.rsp
+/usr/bin/x86_64-w64-mingw32-gcc -Wno-error -static-libgcc  -O2 -O2 -static -static-libgcc -static-libstdc++ -static -static-libgcc -static-libstdc++ -Wl,--whole-archive CMakeFiles/lws-minimal-ws-server.dir/objects.a -Wl,--no-whole-archive -o lws-minimal-ws-server.exe -Wl,--out-implib,liblws-minimal-ws-server.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles/lws-minimal-ws-server.dir/linkLibs.rsp
