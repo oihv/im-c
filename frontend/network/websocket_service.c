@@ -1,15 +1,15 @@
 #include "websocket_service.h"
 #include "../clay.h"
-#include <libwebsockets.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
 
+#ifndef DISABLE_NETWORKING
+#include <libwebsockets.h>
+
 static struct lws_context *ws_context = NULL;
-
 static WebSocketData ws_data = {0};
-
 my_conn ws_connection = {0};
 
 // Retry policy
@@ -262,3 +262,55 @@ void websocket_service_cleanup(void) {
 bool websocket_should_close(void) {
   return ws_data.error || !ws_data.connected;
 }
+
+#else // DISABLE_NETWORKING
+
+// Stub implementations when networking is disabled
+
+static WebSocketData ws_data_stub = {
+    .connected = false,
+    .error = false,
+    .connection_status = "Networking disabled",
+    .messages = NULL,
+    .has_new_message = false
+};
+
+// Stub connection for when networking is disabled
+my_conn ws_connection = {0};
+
+bool websocket_service_init(void) {
+    // Return true to avoid breaking the application flow
+    return true;
+}
+
+bool websocket_service_connect() {
+    // Always fail silently when networking is disabled
+    return false;
+}
+
+WebSocketData *websocket_service_update(void) {
+    // Return stub data
+    return &ws_data_stub;
+}
+
+void websocket_service_send_message(const Message* message) {
+    // Do nothing when networking is disabled
+    (void)message; // Suppress unused parameter warning
+}
+
+void websocket_service_send_text(const char* username, const char* text) {
+    // Do nothing when networking is disabled
+    (void)username; // Suppress unused parameter warning
+    (void)text;     // Suppress unused parameter warning
+}
+
+void websocket_service_cleanup(void) {
+    // Nothing to clean up when networking is disabled
+}
+
+bool websocket_should_close(void) {
+    // Always return false when networking is disabled
+    return false;
+}
+
+#endif // DISABLE_NETWORKING

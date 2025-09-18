@@ -1,5 +1,7 @@
 #ifndef WEBSOCKET_SERVICE_H
 #define WEBSOCKET_SERVICE_H
+
+#ifndef DISABLE_NETWORKING
 #if defined(_WIN32)           
 	#define NOGDI             // All GDI defines and routines
 	#define NOUSER            // All USER defines and routines
@@ -12,6 +14,8 @@
 	#undef near
 	#undef far
 #endif
+#endif // DISABLE_NETWORKING
+
 #include <stdbool.h>
 #include "../clay.h"
 #include "message_types.h"
@@ -24,6 +28,7 @@ typedef struct {
   char connection_status[100];
 } WebSocketData;
 
+#ifndef DISABLE_NETWORKING
 typedef struct {
   lws_sorted_usec_list_t sul;
   struct lws *wsi;
@@ -34,6 +39,14 @@ typedef struct {
   int port;
   bool error;
 } my_conn;
+#else
+// Stub definition when networking is disabled
+typedef struct {
+  char* ipaddr;
+  int port;
+  bool error;
+} my_conn;
+#endif // DISABLE_NETWORKING
 
 // Initialize the websocket service
 bool websocket_service_init(void);

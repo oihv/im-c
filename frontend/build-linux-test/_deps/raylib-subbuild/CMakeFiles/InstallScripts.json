@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/nikolas/Programming/repos/im-c/frontend/build-linux-test/_deps/raylib-subbuild/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

@@ -50,7 +50,11 @@ int main(void) {
   // Clay_SetDebugModeEnabled(true);
 
   if (!websocket_service_init()) {
+#ifndef DISABLE_NETWORKING
     lwsl_err("Failed to initialize websocket connection!");
+#else
+    printf("Failed to initialize websocket connection!\n");
+#endif
     return 1;
   }
 
