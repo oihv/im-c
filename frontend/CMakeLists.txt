@@ -40,9 +40,9 @@ endif()
 
 # Cross-platform dependency finding
 if(WIN32 OR CROSS_COMPILE_WINDOWS)
-    # For Windows cross-compilation, try to find libwebsockets
+    # For Windows cross-compilation, find libwebsockets
     find_library(WEBSOCKETS_LIB 
-        NAMES libwebsockets websockets
+        NAMES libwebsockets_static libwebsockets websockets libwebsocket websocket
         PATHS /usr/x86_64-w64-mingw32/lib
         NO_DEFAULT_PATH
     )
@@ -52,10 +52,7 @@ if(WIN32 OR CROSS_COMPILE_WINDOWS)
         set(LIBWEBSOCKETS_INCLUDE_DIRS /usr/x86_64-w64-mingw32/include)
         message(STATUS "Found Windows libwebsockets: ${WEBSOCKETS_LIB}")
     else()
-        message(WARNING "libwebsockets not found for Windows. Building without networking support.")
-        set(LIBWEBSOCKETS_LIBRARIES "")
-        set(LIBWEBSOCKETS_INCLUDE_DIRS "")
-        add_definitions(-DDISABLE_NETWORKING)
+        message(FATAL_ERROR "libwebsockets not found for Windows. Please install libwebsockets development files for MinGW.")
     endif()
     
     # Windows-specific libraries for static linking

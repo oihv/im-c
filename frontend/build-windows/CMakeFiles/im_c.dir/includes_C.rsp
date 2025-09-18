@@ -1,0 +1,1 @@
+-I"/home/nikolas/Programming/repos/im-c/frontend/." -I"/home/nikolas/Programming/repos/im-c/third_party/raylib/src" -I"/home/nikolas/Programming/repos/im-c/third_party/raylib/src/external/glfw/include"
